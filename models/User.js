@@ -37,6 +37,19 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  resetPasswordToken: {
+  type: String,
+  default: null,
+},
+resetPasswordExpiry: {
+  type: Date,
+  default: null,
+},
+bio: {
+  type: String,
+  default: '',
+  maxlength: [500, 'Bio cannot exceed 500 characters']
+},
 }, {
   timestamps: true,
 });

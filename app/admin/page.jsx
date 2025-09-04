@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Navbar from '@/components/layout/Navbar';
@@ -16,19 +17,14 @@ import {
   PenTool,
   Settings,
   BarChart3,
-  Eye
+  Eye,
+  Calendar
 } from 'lucide-react';
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [stats, setStats] = useState({
-    pendingUsers: 0,
-    totalUsers: 0,
-    pendingBlogs: 0,
-    publishedBlogs: 0,
-    totalViews: 0
-  });
+  const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,48 +35,42 @@ export default function AdminDashboard() {
       return;
     }
     
-    fetchStats();
+    fetchDashboardData();
   }, [session, status, router]);
 
-  const fetchStats = async () => {
+  const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
-      // Fetch user stats
-      const usersResponse = await fetch('/api/admin/users?status=all');
-      if (usersResponse.ok) {
-        const usersData = await usersResponse.json();
-        const pendingUsers = usersData.users.filter(user => !user.isApproved).length;
-        
-        setStats(prev => ({
-          ...prev,
-          totalUsers: usersData.users.length,
-          pendingUsers
-        }));
+      const response = await fetch('/api/admin');
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(data);
       }
-      
-      // TODO: Fetch blog stats when we implement blogs
-      setStats(prev => ({
-        ...prev,
-        pendingBlogs: 5, // Placeholder
-        publishedBlogs: 23, // Placeholder
-        totalViews: 1245 // Placeholder
-      }));
-      
     } catch (error) {
-      console.error('Fetch stats error:', error);
+      console.error('Fetch dashboard data error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (status === 'loading') {
+  if (status === 'loading' || loading) {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">
         <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
         <p>Loading admin dashboard...</p>
       </div>
     </div>;
+  }
+
+  if (!dashboardData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Failed to load dashboard data</p>
+          <Button onClick={fetchDashboardData}>Retry</Button>
+        </div>
+      </div>
+    );
   }
 
   const quickActions = [
@@ -90,7 +80,7 @@ export default function AdminDashboard() {
       icon: Users,
       href: '/admin/users',
       color: 'bg-blue-500',
-      urgent: stats.pendingUsers > 0
+      urgent: dashboardData.users.pending > 0
     },
     {
       title: 'Blog Management',
@@ -98,7 +88,7 @@ export default function AdminDashboard() {
       icon: FileText,
       href: '/admin/blogs',
       color: 'bg-green-500',
-      urgent: stats.pendingBlogs > 0
+      urgent: dashboardData.blogs.pending > 0
     },
     {
       title: 'Analytics',
@@ -121,35 +111,35 @@ export default function AdminDashboard() {
   const statsCards = [
     {
       title: 'Pending Users',
-      value: stats.pendingUsers,
+      value: dashboardData.users.pending,
       icon: Clock,
-      color: stats.pendingUsers > 0 ? 'text-yellow-600' : 'text-gray-600',
-      bgColor: stats.pendingUsers > 0 ? 'bg-yellow-50' : 'bg-gray-50'
+      color: dashboardData.users.pending > 0 ? 'text-yellow-600' : 'text-gray-600',
+      bgColor: dashboardData.users.pending > 0 ? 'bg-yellow-50' : 'bg-gray-50'
     },
     {
       title: 'Total Users',
-      value: stats.totalUsers,
+      value: dashboardData.users.total,
       icon: Users,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50'
     },
     {
       title: 'Pending Blogs',
-      value: stats.pendingBlogs,
+      value: dashboardData.blogs.pending,
       icon: FileText,
-      color: stats.pendingBlogs > 0 ? 'text-orange-600' : 'text-gray-600',
-      bgColor: stats.pendingBlogs > 0 ? 'bg-orange-50' : 'bg-gray-50'
+      color: dashboardData.blogs.pending > 0 ? 'text-orange-600' : 'text-gray-600',
+      bgColor: dashboardData.blogs.pending > 0 ? 'bg-orange-50' : 'bg-gray-50'
     },
     {
       title: 'Published Blogs',
-      value: stats.publishedBlogs,
+      value: dashboardData.blogs.published,
       icon: CheckCircle,
       color: 'text-green-600',
       bgColor: 'bg-green-50'
     },
     {
       title: 'Total Views',
-      value: stats.totalViews.toLocaleString(),
+      value: dashboardData.engagement.totalViews.toLocaleString(),
       icon: Eye,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50'
@@ -238,10 +228,30 @@ export default function AdminDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {stats.pendingUsers > 0 ? (
-                <div className="space-y-3">
-                  <div className="text-sm text-gray-600">
-                    {stats.pendingUsers} users awaiting approval
+              {dashboardData.recentActivity.pendingUsers.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="text-sm text-gray-600 mb-4">
+                    {dashboardData.users.pending} users awaiting approval
+                  </div>
+                  <div className="space-y-3">
+                    {dashboardData.recentActivity.pendingUsers.slice(0, 3).map((user, index) => (
+                      <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">
+                          <span className="text-sm font-bold text-blue-600">
+                            {user.name.charAt(0)}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">{user.name}</div>
+                          <div className="text-sm text-gray-600">{user.email}</div>
+                          <div className="text-xs text-gray-500">{user.department}</div>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          <Calendar className="h-3 w-3 inline mr-1" />
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                   <Link href="/admin/users">
                     <Button size="sm" className="w-full">
@@ -267,10 +277,33 @@ export default function AdminDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {stats.pendingBlogs > 0 ? (
-                <div className="space-y-3">
-                  <div className="text-sm text-gray-600">
-                    {stats.pendingBlogs} blogs awaiting review
+              {dashboardData.recentActivity.pendingBlogs.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="text-sm text-gray-600 mb-4">
+                    {dashboardData.blogs.pending} blogs awaiting review
+                  </div>
+                  <div className="space-y-3">
+                    {dashboardData.recentActivity.pendingBlogs.slice(0, 3).map((blog, index) => (
+                      <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <div className="w-12 h-8 relative rounded overflow-hidden flex-shrink-0">
+                          <Image
+                            src={blog.featuredImage}
+                            alt={blog.title}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900 line-clamp-1">{blog.title}</div>
+                          <div className="text-sm text-gray-600">by {blog.author.name}</div>
+                          <div className="text-xs text-gray-500 capitalize">{blog.category}</div>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          <Calendar className="h-3 w-3 inline mr-1" />
+                          {new Date(blog.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                   <Link href="/admin/blogs">
                     <Button size="sm" className="w-full" variant="outline">
@@ -282,7 +315,6 @@ export default function AdminDashboard() {
                 <div className="text-center py-6 text-gray-500">
                   <FileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                   <p>No pending blog submissions</p>
-                  <p className="text-xs mt-1">Blog system coming soon!</p>
                 </div>
               )}
             </CardContent>
@@ -316,12 +348,12 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <div className="flex items-center justify-center w-8 h-8 bg-yellow-100 rounded-full">
-                    <Clock className="h-5 w-5 text-yellow-600" />
+                  <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-full">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">Blog System</p>
-                    <p className="text-sm text-gray-500">In Development</p>
+                    <p className="text-sm text-gray-500">Active</p>
                   </div>
                 </div>
               </div>

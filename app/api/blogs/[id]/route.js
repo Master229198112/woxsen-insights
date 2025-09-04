@@ -2,18 +2,19 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Blog from '@/models/Blog';
 import Comment from '@/models/Comment';
-import User from '@/models/User'; // IMPORTANT: Import User model
 
 export async function GET(request, { params }) {
   try {
-    // Await params in Next.js 15
-    const { id } = await params;
-    
     await connectDB();
     
-    // Find the blog and populate author info
-    const blog = await Blog.findById(id)
-      .populate('author', 'name email department profileImage');
+    const { id } = await params;
+
+    // Find the blog and increment views atomically
+    const blog = await Blog.findByIdAndUpdate(
+      id,
+      { $inc: { views: 1 } }, // Increment views by 1
+      { new: true } // Return updated document
+    ).populate('author', 'name email department');
     
     if (!blog) {
       return NextResponse.json(
@@ -21,49 +22,44 @@ export async function GET(request, { params }) {
         { status: 404 }
       );
     }
-    
-    // Only show published blogs to public (unless it's the author viewing their own)
+
+    // Only return published blogs (except for authors and admins)
     if (blog.status !== 'published') {
       return NextResponse.json(
-        { error: 'Blog not available' },
+        { error: 'Blog not found' },
         { status: 404 }
       );
     }
-    
-    // Increment view count
-    await Blog.findByIdAndUpdate(id, { $inc: { views: 1 } });
-    
-    // Get comments for this blog
-    const comments = await Comment.find({ 
-      blog: id, 
-      isApproved: true 
+
+    // Get approved comments for this blog
+    const comments = await Comment.find({
+      blog: id,
+      isApproved: true
     })
-    .populate('author', 'name department')
-    .sort({ createdAt: -1 });
-    
-    // Get related blogs (same category, excluding current blog)
+    .populate('author', 'name email department')
+    .sort({ createdAt: -1 })
+    .limit(50); // Limit comments to prevent large responses
+
+    // Get related blogs from same category (excluding current blog)
     const relatedBlogs = await Blog.find({
       category: blog.category,
       status: 'published',
       _id: { $ne: id }
     })
     .populate('author', 'name department')
-    .limit(3)
-    .sort({ publishedAt: -1 });
-    
+    .sort({ publishedAt: -1 })
+    .limit(4);
+
     return NextResponse.json({
-      blog: {
-        ...blog.toObject(),
-        views: blog.views + 1 // Return incremented count
-      },
+      blog,
       comments,
       relatedBlogs
     });
-    
+
   } catch (error) {
-    console.error('Get blog error:', error);
+    console.error('Blog fetch error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

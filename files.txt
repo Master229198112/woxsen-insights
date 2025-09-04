@@ -1,0 +1,118 @@
+┣ 📂app
+┃ ┣ 📂admin
+┃ ┃ ┣ 📂blogs
+┃ ┃ ┃ ┗ 📜page.jsx
+┃ ┃ ┣ 📂users
+┃ ┃ ┃ ┗ 📜page.jsx
+┃ ┃ ┣ 📜layout.jsx
+┃ ┃ ┗ 📜page.jsx
+┃ ┣ 📂api
+┃ ┃ ┣ 📂admin
+┃ ┃ ┃ ┣ 📂blogs
+┃ ┃ ┃ ┃ ┣ 📂[blogId]
+┃ ┃ ┃ ┃ ┃ ┗ 📜route.js
+┃ ┃ ┃ ┃ ┗ 📜route.js
+┃ ┃ ┃ ┣ 📂create-admin
+┃ ┃ ┃ ┃ ┗ 📜route.js
+┃ ┃ ┃ ┗ 📂users
+┃ ┃ ┃   ┣ 📂[userId]
+┃ ┃ ┃   ┃ ┗ 📂approve
+┃ ┃ ┃   ┃   ┗ 📜route.js
+┃ ┃ ┃   ┗ 📜route.js
+┃ ┃ ┣ 📂auth
+┃ ┃ ┃ ┣ 📂[...nextauth]
+┃ ┃ ┃ ┃ ┗ 📜route.js
+┃ ┃ ┃ ┗ 📂register
+┃ ┃ ┃   ┗ 📜route.js
+┃ ┃ ┣ 📂blogs
+┃ ┃ ┃ ┣ 📂[id]
+┃ ┃ ┃ ┃ ┗ 📜route.js
+┃ ┃ ┃ ┗ 📜route.js
+┃ ┃ ┣ 📂category
+┃ ┃ ┃ ┗ 📂[slug]
+┃ ┃ ┃   ┗ 📜route.js
+┃ ┃ ┣ 📂comments
+┃ ┃ ┃ ┗ 📜route.js
+┃ ┃ ┣ 📂dashboard
+┃ ┃ ┃ ┗ 📂blogs
+┃ ┃ ┃   ┗ 📜route.js
+┃ ┃ ┣ 📂debug
+┃ ┃ ┃ ┣ 📂blogs
+┃ ┃ ┃ ┃ ┗ 📜route.js
+┃ ┃ ┃ ┗ 📂users
+┃ ┃ ┃   ┗ 📜route.js
+┃ ┃ ┣ 📂homepage
+┃ ┃ ┃ ┗ 📜route.js
+┃ ┃ ┗ 📂upload
+┃ ┃   ┣ 📂image
+┃ ┃   ┃ ┗ 📜route.js
+┃ ┃   ┗ 📜route.js
+┃ ┣ 📂auth
+┃ ┃ ┣ 📂register
+┃ ┃ ┃ ┗ 📜page.jsx
+┃ ┃ ┗ 📂signin
+┃ ┃   ┗ 📜page.jsx
+┃ ┣ 📂blog
+┃ ┃ ┗ 📂[id]
+┃ ┃   ┗ 📜page.jsx
+┃ ┣ 📂category
+┃ ┃ ┗ 📂[slug]
+┃ ┃   ┗ 📜page.jsx
+┃ ┣ 📂dashboard
+┃ ┃ ┣ 📂create
+┃ ┃ ┃ ┗ 📜page.jsx
+┃ ┃ ┗ 📜page.jsx
+┃ ┣ 📜favicon.ico
+┃ ┣ 📜globals.css
+┃ ┣ 📜layout.js
+┃ ┣ 📜page.js
+┃ ┗ 📜providers.jsx
+┣ 📂components
+┃ ┣ 📂blog
+┃ ┃ ┣ 📜BlogComments.jsx
+┃ ┃ ┣ 📜BlogContent.jsx
+┃ ┃ ┣ 📜BlogSidebar.jsx
+┃ ┃ ┗ 📜ShareButtons.jsx
+┃ ┣ 📂category
+┃ ┃ ┣ 📜CategoryContent.jsx
+┃ ┃ ┣ 📜CategoryHeader.jsx
+┃ ┃ ┗ 📜CategorySidebar.jsx
+┃ ┣ 📂layout
+┃ ┃ ┣ 📜Footer.jsx
+┃ ┃ ┗ 📜Navbar.jsx
+┃ ┣ 📂ui
+┃ ┃ ┣ 📜badge.jsx
+┃ ┃ ┣ 📜button.jsx
+┃ ┃ ┣ 📜card.jsx
+┃ ┃ ┣ 📜input.jsx
+┃ ┃ ┗ 📜textarea.jsx
+┃ ┣ 📜ImageUpload.jsx
+┃ ┣ 📜RichTextEditor.jsx
+┃ ┗ 📜RichTextEditorWrapper.jsx
+┣ 📂lib
+┃ ┣ 📜auth-config.js
+┃ ┣ 📜cloudinary.js
+┃ ┣ 📜create-admin.js
+┃ ┣ 📜debug-db.js
+┃ ┣ 📜mongodb.js
+┃ ┗ 📜utils.js
+┣ 📂models
+┃ ┣ 📜Blog.js
+┃ ┣ 📜Comment.js
+┃ ┗ 📜User.js
+┣ 📂public
+┃ ┣ 📜file.svg
+┃ ┣ 📜globe.svg
+┃ ┣ 📜next.svg
+┃ ┣ 📜vercel.svg
+┃ ┗ 📜window.svg
+┣ 📜.env.local
+┣ 📜.gitignore
+┣ 📜eslint.config.mjs
+┣ 📜jsconfig.json
+┣ 📜next.config.js
+┣ 📜next.config.mjs
+┣ 📜package.json
+┣ 📜postcss.config.mjs
+┣ 📜README.md
+┗ 📜tailwind.config.js

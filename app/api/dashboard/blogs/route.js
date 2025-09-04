@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import connectDB from '@/lib/mongodb';
 import Blog from '@/models/Blog';
+import mongoose from 'mongoose';
 import { authOptions } from '@/lib/auth-config';
 
 export async function GET(request) {
@@ -23,7 +24,10 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     
-    let filter = { author: session.user.id };
+    // FIX: Convert session.user.id to ObjectId
+    const userId = new mongoose.Types.ObjectId(session.user.id);
+    
+    let filter = { author: userId };
     if (status && status !== 'all') {
       filter.status = status;
     }
@@ -38,20 +42,20 @@ export async function GET(request) {
 
     // Get counts for user's blogs
     const pendingCount = await Blog.countDocuments({ 
-      author: session.user.id, 
+      author: userId, 
       status: 'pending' 
     });
     const publishedCount = await Blog.countDocuments({ 
-      author: session.user.id, 
+      author: userId, 
       status: 'published' 
     });
     const totalCount = await Blog.countDocuments({ 
-      author: session.user.id 
+      author: userId 
     });
 
-    // Calculate total views
+    // FIX: Calculate total views with proper ObjectId matching
     const viewsResult = await Blog.aggregate([
-      { $match: { author: session.user.id } },
+      { $match: { author: userId } },
       { $group: { _id: null, totalViews: { $sum: '$views' } } }
     ]);
     const totalViews = viewsResult.length > 0 ? viewsResult[0].totalViews : 0;

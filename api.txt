@@ -1,0 +1,47 @@
+┣ 📂admin
+┃ ┣ 📂blogs
+┃ ┃ ┣ 📂[blogId]
+┃ ┃ ┃ ┗ 📜route.js
+┃ ┃ ┗ 📜route.js
+┃ ┣ 📂create-admin
+┃ ┃ ┗ 📜route.js
+┃ ┗ 📂users
+┃   ┣ 📂[userId]
+┃   ┃ ┗ 📂approve
+┃   ┃   ┗ 📜route.js
+┃   ┗ 📜route.js
+┣ 📂auth
+┃ ┣ 📂[...nextauth]
+┃ ┃ ┗ 📜route.js
+┃ ┣ 📂forgot-password
+┃ ┃ ┗ 📜route.js
+┃ ┗ 📂register
+┃   ┗ 📜route.js
+┣ 📂blogs
+┃ ┣ 📂[id]
+┃ ┃ ┗ 📜route.js
+┃ ┗ 📜route.js
+┣ 📂category
+┃ ┗ 📂[slug]
+┃   ┗ 📜route.js
+┣ 📂comments
+┃ ┗ 📜route.js
+┣ 📂dashboard
+┃ ┗ 📂blogs
+┃   ┗ 📜route.js
+┣ 📂debug
+┃ ┣ 📂blogs
+┃ ┃ ┗ 📜route.js
+┃ ┗ 📂users
+┃   ┗ 📜route.js
+┣ 📂homepage
+┃ ┗ 📜route.js
+┣ 📂upload
+┃ ┣ 📂image
+┃ ┃ ┗ 📜route.js
+┃ ┗ 📜route.js
+┗ 📂user
+  ┣ 📂change-password
+  ┃ ┗ 📜route.js
+  ┗ 📂profile
+    ┗ 📜route.js

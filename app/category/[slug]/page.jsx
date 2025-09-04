@@ -47,7 +47,18 @@ const categoryInfo = {
 async function getCategoryData(slug, searchParams) {
   try {
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    const params = new URLSearchParams(searchParams);
+    
+    // FIX: Safely extract only string key-value pairs from searchParams
+    const cleanParams = {};
+    if (searchParams) {
+      Object.keys(searchParams).forEach(key => {
+        if (typeof key === 'string' && typeof searchParams[key] === 'string') {
+          cleanParams[key] = searchParams[key];
+        }
+      });
+    }
+    
+    const params = new URLSearchParams(cleanParams);
     
     const response = await fetch(`${baseUrl}/api/category/${slug}?${params}`, {
       cache: 'no-store'
@@ -133,3 +144,4 @@ export default async function CategoryPage({ params, searchParams }) {
     </div>
   );
 }
+ 

@@ -256,19 +256,22 @@ export default function CategoryContent({ data, info, searchParams }) {
                     <p className="text-gray-600 mb-4 line-clamp-3">
                       {post.excerpt}
                     </p>
-                    <div className="flex items-center justify-between text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <User className="h-4 w-4 mr-1" />
-                        <span>{post.author.name}</span>
+                    <div className="space-y-2">
+                      {/* Author Name */}
+                      <div className="flex items-center text-sm text-gray-700">
+                        <User className="h-4 w-4 mr-2" />
+                        <span className="font-medium">{post.author.name}</span>
                       </div>
-                      <div className="flex items-center space-x-3">
+                      
+                      {/* Date and Views */}
+                      <div className="flex items-center justify-between text-sm text-gray-500">
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
                           <span>{formatDate(post.publishedAt)}</span>
                         </div>
                         <div className="flex items-center">
                           <Eye className="h-4 w-4 mr-1" />
-                          <span>{post.views}</span>
+                          <span>{post.views} views</span>
                         </div>
                       </div>
                     </div>

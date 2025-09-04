@@ -188,9 +188,11 @@ export default function UserDashboard() {
                   <p className="text-sm text-gray-500">{session.user.department}</p>
                 </div>
                 
-                <Button variant="outline" className="w-full" size="sm">
-                  Edit Profile
-                </Button>
+                <Link href="/dashboard/profile">
+                  <Button variant="outline" className="w-full" size="sm">
+                    Edit Profile
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
