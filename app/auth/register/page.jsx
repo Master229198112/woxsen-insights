@@ -1,11 +1,11 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // MAKE SURE useEffect IS IMPORTED
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { GraduationCap, Eye, EyeOff, UserPlus, CheckCircle } from 'lucide-react';
+import { GraduationCap, Eye, EyeOff, UserPlus, CheckCircle, AlertCircle } from 'lucide-react'; // ADD AlertCircle
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -20,6 +20,12 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(''); // ADD THIS
+  
+  // ADD THESE NEW STATE VARIABLES
+  const [registrationAllowed, setRegistrationAllowed] = useState(true);
+  const [requiresApproval, setRequiresApproval] = useState(true);
+  const [settingsLoading, setSettingsLoading] = useState(true);
   
   const router = useRouter();
 
@@ -37,6 +43,30 @@ export default function Register() {
     'Digital Marketing',
     'Supply Chain Management',
   ];
+
+  // ADD THIS useEffect TO CHECK REGISTRATION SETTINGS
+  useEffect(() => {
+    const checkRegistrationSettings = async () => {
+      try {
+        setSettingsLoading(true);
+        const response = await fetch('/api/admin/settings');
+        if (response.ok) {
+          const { settings } = await response.json();
+          setRegistrationAllowed(settings.allowRegistration);
+          setRequiresApproval(settings.requireApproval);
+        }
+      } catch (error) {
+        console.error('Failed to check registration settings:', error);
+        // If we can't fetch settings, assume registration is allowed
+        setRegistrationAllowed(true);
+        setRequiresApproval(true);
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+
+    checkRegistrationSettings();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -76,6 +106,8 @@ export default function Register() {
         throw new Error(data.error || 'Registration failed');
       }
 
+      // UPDATE SUCCESS HANDLING
+      setSuccessMessage(data.message);
       setSuccess(true);
     } catch (error) {
       setError(error.message);
@@ -92,6 +124,51 @@ export default function Register() {
     }));
   };
 
+  // ADD LOADING STATE FOR SETTINGS
+  if (settingsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p>Loading registration form...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ADD REGISTRATION DISABLED CHECK
+  if (!registrationAllowed) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full">
+                <AlertCircle className="h-8 w-8 text-red-600" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Disabled</h2>
+            <p className="text-gray-600 mb-6">
+              User registration is currently disabled. Please contact an administrator for access.
+            </p>
+            <div className="space-y-4">
+              <Link href="/auth/signin">
+                <Button variant="outline" className="w-full">
+                  Go to Sign In
+                </Button>
+              </Link>
+              <Link href="/">
+                <Button variant="outline" className="w-full">
+                  Return to Home
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (success) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -104,7 +181,7 @@ export default function Register() {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h2>
             <p className="text-gray-600 mb-6">
-              Your account has been created successfully. Please wait for admin approval before you can sign in.
+              {successMessage} {/* USE DYNAMIC MESSAGE */}
             </p>
             <div className="space-y-4">
               <Link href="/auth/signin">
@@ -151,6 +228,18 @@ export default function Register() {
           
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-6">
+              {/* ADD APPROVAL NOTICE */}
+              {requiresApproval && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="h-4 w-4 text-yellow-600 mr-2" />
+                    <p className="text-sm text-yellow-800">
+                      New accounts require admin approval before you can sign in.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
                   {error}
@@ -273,8 +362,9 @@ export default function Register() {
                 </div>
               </div>
 
+              {/* UPDATE THE FOOTER TEXT */}
               <div className="text-xs text-gray-500">
-                By registering, you agree that your account will be reviewed by an administrator before activation.
+                By registering, you agree that your account{requiresApproval ? ' will be reviewed by an administrator before activation.' : ' will be activated immediately.'}
               </div>
             </CardContent>
 

@@ -2,48 +2,117 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import connectDB from '@/lib/mongodb';
 import Blog from '@/models/Blog';
+import Settings from '@/models/Settings'; // ADD THIS IMPORT
 import { authOptions } from '@/lib/auth-config';
 
-// GET /api/admin/blogs - Get all blogs for admin review
-export async function GET(request) {
+// POST /api/blogs - Create new blog post
+export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'admin') {
+    if (!session) {
       return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
     await connectDB();
-
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') || 'pending';
     
-    let filter = {};
-    if (status !== 'all') {
-      filter.status = status;
+    // CHECK SETTINGS FOR AUTO-PUBLISH - ADD THIS BLOCK
+    const settings = await Settings.getSettings();
+    
+    const { title, content, excerpt, category, tags, featuredImage } = await request.json();
+
+    // Validation
+    if (!title || !content || !excerpt || !category || !featuredImage) {
+      return NextResponse.json(
+        { error: 'All fields are required' },
+        { status: 400 }
+      );
     }
 
-    const blogs = await Blog.find(filter)
-      .populate('author', 'name email department')
-      .sort({ createdAt: -1 });
-
-    // Get counts for different statuses
-    const pendingCount = await Blog.countDocuments({ status: 'pending' });
-    const publishedCount = await Blog.countDocuments({ status: 'published' });
-    const totalCount = await Blog.countDocuments();
-
-    return NextResponse.json({ 
-      blogs,
-      counts: {
-        pending: pendingCount,
-        published: publishedCount,
-        total: totalCount
-      }
+    // UPDATED BLOG CREATION WITH AUTO-PUBLISH
+    const newBlog = new Blog({
+      title,
+      content,
+      excerpt,
+      author: session.user.id,
+      category,
+      tags: tags || [],
+      featuredImage,
+      status: settings.autoPublish ? 'published' : 'pending', // Auto-publish based on settings
+      publishedAt: settings.autoPublish ? new Date() : null, // Set publish date if auto-publishing
     });
 
+    const savedBlog = await newBlog.save();
+    const populatedBlog = await savedBlog.populate('author', 'name email department');
+
+    // UPDATED RESPONSE MESSAGE
+    const message = settings.autoPublish 
+      ? 'Blog published successfully!' 
+      : 'Blog submitted for review!';
+
+    console.log(`📝 Blog "${title}" ${settings.autoPublish ? 'published' : 'submitted'} by ${session.user.name}`);
+
+    return NextResponse.json({ 
+      blog: populatedBlog,
+      message,
+      autoPublished: settings.autoPublish
+    }, { status: 201 });
+
+  } catch (error) {
+    console.error('Create blog error:', error);
+    
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return NextResponse.json(
+        { error: validationErrors.join('. ') },
+        { status: 400 }
+      );
+    }
+    
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// GET /api/blogs - Get published blogs (existing functionality)
+export async function GET(request) {
+  try {
+    await connectDB();
+    
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category');
+    const limit = parseInt(searchParams.get('limit')) || 10;
+    const page = parseInt(searchParams.get('page')) || 1;
+    
+    let filter = { status: 'published' };
+    if (category) {
+      filter.category = category;
+    }
+    
+    const blogs = await Blog.find(filter)
+      .populate('author', 'name department')
+      .sort({ publishedAt: -1 })
+      .limit(limit)
+      .skip((page - 1) * limit);
+    
+    const total = await Blog.countDocuments(filter);
+    
+    return NextResponse.json({
+      blogs,
+      pagination: {
+        current: page,
+        total: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1,
+        totalItems: total
+      }
+    });
+    
   } catch (error) {
     console.error('Get blogs error:', error);
     return NextResponse.json(

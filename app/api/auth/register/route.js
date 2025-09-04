@@ -1,10 +1,21 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
+import Settings from '@/models/Settings'; // ADD THIS IMPORT
 
 export async function POST(request) {
   try {
     await connectDB();
+
+    // CHECK REGISTRATION SETTINGS - ADD THIS BLOCK
+    const settings = await Settings.getSettings();
+    
+    if (!settings.allowRegistration) {
+      return NextResponse.json(
+        { error: 'User registration is currently disabled' },
+        { status: 403 }
+      );
+    }
     
     const { name, email, password, department } = await request.json();
 
@@ -32,21 +43,25 @@ export async function POST(request) {
       );
     }
 
-    // Create new user
+    // Create new user - UPDATED THIS PART
     const user = await User.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password,
       department: department.trim(),
-      isApproved: false, // Requires admin approval
+      isApproved: !settings.requireApproval, // Auto-approve if not required
     });
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user.toObject();
 
+    // UPDATED RESPONSE MESSAGE
     return NextResponse.json(
       {
-        message: 'Account created successfully. Please wait for admin approval.',
+        message: settings.requireApproval 
+          ? 'Account created successfully. Please wait for admin approval.'
+          : 'Account created successfully. You can now sign in.',
+        requiresApproval: settings.requireApproval,
         user: userWithoutPassword
       },
       { status: 201 }

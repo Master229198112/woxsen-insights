@@ -18,23 +18,30 @@ import {
   Users,
   FileText,
   Save,
-  RefreshCw
+  RefreshCw,
+  CheckCircle,
+  AlertCircle,
+  Loader
 } from 'lucide-react';
 
 export default function AdminSettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  
   const [settings, setSettings] = useState({
-    siteName: 'Woxsen Insights',
-    siteDescription: 'School of Business',
+    siteName: '',
+    siteDescription: '',
     adminEmail: '',
     allowRegistration: true,
     requireApproval: true,
     autoPublish: false,
-    maintenanceMode: false
+    maintenanceMode: false,
+    maintenanceMessage: ''
   });
-  const [loading, setLoading] = useState(false);
+  
+  const [loading, setLoading] = useState({ page: true, save: false });
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [actionLoading, setActionLoading] = useState({ cache: false, backup: false, email: false });
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -44,12 +51,30 @@ export default function AdminSettingsPage() {
       return;
     }
     
-    // Initialize with current values
-    setSettings(prev => ({
-      ...prev,
-      adminEmail: session.user.email
-    }));
+    fetchSettings();
   }, [session, status, router]);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading({ ...loading, page: true });
+      const response = await fetch('/api/admin/settings');
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSettings(data.settings);
+      } else {
+        throw new Error('Failed to fetch settings');
+      }
+    } catch (error) {
+      console.error('Fetch settings error:', error);
+      setMessage({ 
+        type: 'error', 
+        text: 'Failed to load settings. Please refresh the page.' 
+      });
+    } finally {
+      setLoading({ ...loading, page: false });
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -61,28 +86,82 @@ export default function AdminSettingsPage() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setLoading({ ...loading, save: true });
     setMessage({ type: '', text: '' });
 
-    // Simulate saving settings (in real app, you'd create an API endpoint)
-    setTimeout(() => {
-      setMessage({ 
-        type: 'success', 
-        text: 'Settings saved successfully! Changes will take effect after server restart.' 
+    try {
+      const response = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
       });
-      setLoading(false);
-    }, 1000);
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ 
+          type: 'success', 
+          text: 'Settings saved successfully!' 
+        });
+        setSettings(data.settings);
+      } else {
+        throw new Error(data.error || 'Failed to save settings');
+      }
+    } catch (error) {
+      setMessage({ 
+        type: 'error', 
+        text: error.message || 'An error occurred while saving settings' 
+      });
+    } finally {
+      setLoading({ ...loading, save: false });
+    }
+  };
+
+  const handleQuickAction = async (action) => {
+    const actionKey = action.replace('_', '');
+    setActionLoading({ ...actionLoading, [actionKey]: true });
+    setMessage({ type: '', text: '' });
+
+    try {
+      const response = await fetch('/api/admin/quick-actions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ 
+          type: 'success', 
+          text: data.result.message 
+        });
+      } else {
+        throw new Error(data.error || `Failed to ${action.replace('_', ' ')}`);
+      }
+    } catch (error) {
+      setMessage({ 
+        type: 'error', 
+        text: error.message 
+      });
+    } finally {
+      setActionLoading({ ...actionLoading, [actionKey]: false });
+    }
   };
 
   const systemInfo = {
     nextjsVersion: '15.5.2',
-    nodeVersion: process.env.NODE_VERSION || 'Unknown',
+    nodeVersion: typeof window !== 'undefined' ? 'Browser' : process.env.NODE_VERSION || 'Unknown',
     deploymentEnv: process.env.NODE_ENV || 'development',
     databaseStatus: 'Connected',
-    lastBackup: 'Not configured'
+    lastBackup: settings.lastUpdated ? new Date(settings.lastUpdated).toLocaleString() : 'Not available'
   };
 
-  if (status === 'loading') {
+  if (status === 'loading' || loading.page) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -139,6 +218,7 @@ export default function AdminSettingsPage() {
                       value={settings.siteName}
                       onChange={handleInputChange}
                       placeholder="Enter site name"
+                      required
                     />
                   </div>
 
@@ -170,6 +250,7 @@ export default function AdminSettingsPage() {
                         onChange={handleInputChange}
                         className="pl-10"
                         placeholder="admin@woxsen.edu.in"
+                        required
                       />
                     </div>
                   </div>
@@ -211,7 +292,8 @@ export default function AdminSettingsPage() {
                       name="requireApproval"
                       checked={settings.requireApproval}
                       onChange={handleInputChange}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      disabled={!settings.allowRegistration}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -270,10 +352,29 @@ export default function AdminSettingsPage() {
                   </div>
 
                   {settings.maintenanceMode && (
-                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-sm text-yellow-800">
-                        ⚠️ Maintenance mode will prevent regular users from accessing the platform.
-                      </p>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div className="flex items-center">
+                          <AlertCircle className="h-4 w-4 text-yellow-600 mr-2" />
+                          <p className="text-sm text-yellow-800">
+                            Maintenance mode will prevent regular users from accessing the platform.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="maintenanceMessage" className="block text-sm font-medium text-gray-700 mb-2">
+                          Maintenance Message
+                        </label>
+                        <Textarea
+                          id="maintenanceMessage"
+                          name="maintenanceMessage"
+                          value={settings.maintenanceMessage}
+                          onChange={handleInputChange}
+                          rows={3}
+                          placeholder="Message to display during maintenance"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -284,12 +385,12 @@ export default function AdminSettingsPage() {
             <div className="flex items-center justify-end space-x-4">
               <Button 
                 onClick={handleSave}
-                disabled={loading}
+                disabled={loading.save}
                 className="flex items-center"
               >
-                {loading ? (
+                {loading.save ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    <Loader className="w-4 h-4 animate-spin mr-2" />
                     Saving...
                   </>
                 ) : (
@@ -303,11 +404,16 @@ export default function AdminSettingsPage() {
 
             {/* Message */}
             {message.text && (
-              <div className={`p-4 rounded-lg ${
+              <div className={`p-4 rounded-lg flex items-center ${
                 message.type === 'success' 
                   ? 'bg-green-50 text-green-800 border border-green-200' 
                   : 'bg-red-50 text-red-800 border border-red-200'
               }`}>
+                {message.type === 'success' ? (
+                  <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                )}
                 {message.text}
               </div>
             )}
@@ -342,7 +448,7 @@ export default function AdminSettingsPage() {
                     <span className="text-sm font-medium text-green-600">{systemInfo.databaseStatus}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Last Backup</span>
+                    <span className="text-sm text-gray-600">Last Updated</span>
                     <span className="text-sm font-medium text-gray-500">{systemInfo.lastBackup}</span>
                   </div>
                 </div>
@@ -356,16 +462,45 @@ export default function AdminSettingsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <Button variant="outline" className="w-full justify-start">
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => handleQuickAction('clear_cache')}
+                    disabled={actionLoading.cache}
+                  >
+                    {actionLoading.cache ? (
+                      <Loader className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                    )}
                     Clear Cache
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Database className="h-4 w-4 mr-2" />
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => handleQuickAction('backup_database')}
+                    disabled={actionLoading.backup}
+                  >
+                    {actionLoading.backup ? (
+                      <Loader className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Database className="h-4 w-4 mr-2" />
+                    )}
                     Backup Database
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Mail className="h-4 w-4 mr-2" />
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => handleQuickAction('test_email')}
+                    disabled={actionLoading.email}
+                  >
+                    {actionLoading.email ? (
+                      <Loader className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Mail className="h-4 w-4 mr-2" />
+                    )}
                     Test Email
                   </Button>
                 </div>
