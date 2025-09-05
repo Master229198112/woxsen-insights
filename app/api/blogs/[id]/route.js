@@ -7,14 +7,18 @@ export async function GET(request, { params }) {
   try {
     await connectDB();
     
-    const { id } = await params;
+    const { id } = await params; // This will now be either ID or slug
 
-    // Find the blog and increment views atomically
-    const blog = await Blog.findByIdAndUpdate(
-      id,
-      { $inc: { views: 1 } }, // Increment views by 1
-      { new: true } // Return updated document
-    ).populate('author', 'name email department');
+    let blog;
+    
+    // Try to find by slug first, then by ID
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      // It's a MongoDB ObjectId format
+      blog = await Blog.findById(id).populate('author', 'name email department');
+    } else {
+      // It's a slug
+      blog = await Blog.findOne({ slug: id }).populate('author', 'name email department');
+    }
     
     if (!blog) {
       return NextResponse.json(
@@ -31,20 +35,24 @@ export async function GET(request, { params }) {
       );
     }
 
+    // Increment views atomically
+    await Blog.findByIdAndUpdate(blog._id, { $inc: { views: 1 } });
+    blog.views += 1; // Update the current object for response
+
     // Get approved comments for this blog
     const comments = await Comment.find({
-      blog: id,
+      blog: blog._id,
       isApproved: true
     })
     .populate('author', 'name email department')
     .sort({ createdAt: -1 })
-    .limit(50); // Limit comments to prevent large responses
+    .limit(50);
 
     // Get related blogs from same category (excluding current blog)
     const relatedBlogs = await Blog.find({
       category: blog.category,
       status: 'published',
-      _id: { $ne: id }
+      _id: { $ne: blog._id }
     })
     .populate('author', 'name department')
     .sort({ publishedAt: -1 })

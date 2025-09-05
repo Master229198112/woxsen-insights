@@ -23,7 +23,16 @@ const blogSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['research', 'achievements', 'publications', 'events', 'patents','case-studies','blogs','industry-collaborations'],
+    enum: [
+      'research', 
+      'achievements', 
+      'publications', 
+      'events', 
+      'patents',
+      'case-studies',
+      'blogs',
+      'industry-collaborations'
+    ],
     required: [true, 'Category is required'],
   },
   tags: [{
@@ -64,20 +73,39 @@ const blogSchema = new mongoose.Schema({
   slug: {
     type: String,
     unique: true,
-    sparse: true, // Allow multiple documents with null/undefined slug
+    sparse: true, // This allows multiple null values
   },
 }, {
   timestamps: true,
 });
 
-// Generate slug before saving
-blogSchema.pre('save', function(next) {
-  if (this.isModified('title') && this.status === 'published') {
-    this.slug = this.title
-      .toLowerCase()
-      .replace(/[^a-zA-Z0-9 ]/g, '')
-      .replace(/\s+/g, '-')
-      .substring(0, 50) + '-' + Date.now();
+// Helper function to generate slug
+function generateSlug(title) {
+  return title
+    .toLowerCase()
+    .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .substring(0, 50) // Limit length
+    .replace(/-+$/, ''); // Remove trailing hyphens
+}
+
+// Generate unique slug before saving
+blogSchema.pre('save', async function(next) {
+  // Only generate slug when title is modified and status is published
+  if (this.isModified('title') || (this.isModified('status') && this.status === 'published')) {
+    if (this.status === 'published' && !this.slug) {
+      const baseSlug = generateSlug(this.title);
+      let slug = baseSlug;
+      let counter = 1;
+      
+      // Check for existing slugs and make unique
+      while (await mongoose.models.Blog.findOne({ slug, _id: { $ne: this._id } })) {
+        slug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+      
+      this.slug = slug;
+    }
   }
   next();
 });
@@ -95,6 +123,6 @@ blogSchema.index({ status: 1, publishedAt: -1 });
 blogSchema.index({ category: 1, status: 1 });
 blogSchema.index({ author: 1 });
 blogSchema.index({ tags: 1 });
-// REMOVED: blogSchema.index({ slug: 1 }); - This was causing the duplicate warning
+blogSchema.index({ slug: 1 }, { sparse: true }); // Sparse index allows multiple nulls
 
 export default mongoose.models.Blog || mongoose.model('Blog', blogSchema);

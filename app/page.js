@@ -136,7 +136,7 @@ export default async function HomePage() {
                     <span>{heroPost.views} views</span>
                   </div>
                 </div>
-                <Link href={`/blog/${heroPost._id}`}>
+                <Link href={`/blog/${heroPost.slug || heroPost._id}`}>
                   <Button size="lg" className="text-lg px-8 py-4">
                     Read Full Article
                     <ArrowRight className="ml-2 h-5 w-5" />
@@ -253,7 +253,7 @@ export default async function HomePage() {
                       <span>{post.author.name}</span>
                       <span>{formatDate(post.publishedAt)}</span>
                     </div>
-                    <Link href={`/blog/${post._id}`} className="block mt-4">
+                    <Link href={`/blog/${post.slug || post._id}`} className="block mt-4">
                       <Button variant="outline" size="sm" className="w-full">
                         Read More
                       </Button>
@@ -276,7 +276,7 @@ export default async function HomePage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {recentPosts.map((post) => (
-                <Link key={post._id} href={`/blog/${post._id}`} className="group">
+                <Link key={post._id} href={`/blog/${post.slug || post._id}`} className="group">
                   <article>
                     <div className="relative h-40 mb-4 rounded-lg overflow-hidden">
                       <Image

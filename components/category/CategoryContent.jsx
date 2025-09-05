@@ -106,7 +106,7 @@ export default function CategoryContent({ data, info, searchParams }) {
                     <span>•</span>
                     <span>{formatDate(post.publishedAt)}</span>
                   </div>
-                  <Link href={`/blog/${post._id}`} className="block mt-3">
+                  <Link href={`/blog/${post.slug || post._id}`} className="block mt-3">
                     <Button variant="outline" size="sm" className="w-full">
                       Read More
                     </Button>
@@ -240,7 +240,7 @@ export default function CategoryContent({ data, info, searchParams }) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {data.blogs.map((post) => (
               <Card key={post._id} className="group hover:shadow-lg transition-shadow overflow-hidden">
-                <Link href={`/blog/${post._id}`}>
+                <Link href={`/blog/${post.slug || post._id}`}>
                   <div className="relative h-48">
                     <Image
                       src={post.featuredImage}

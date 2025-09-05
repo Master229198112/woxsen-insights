@@ -50,7 +50,7 @@ const BlogSidebar = ({ relatedBlogs, currentCategory }) => {
               {relatedBlogs.map((blog) => (
                 <Link 
                   key={blog._id} 
-                  href={`/blog/${blog._id}`}
+                  href={`/blog/${blog.slug || blog._id}`}
                   className="block group"
                 >
                   <div className="flex space-x-3">

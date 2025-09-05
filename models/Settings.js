@@ -88,8 +88,8 @@ const settingsSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Ensure only one settings document exists
-settingsSchema.index({ _id: 1 }, { unique: true });
+// REMOVED THE PROBLEMATIC INDEX - MongoDB handles _id automatically
+// settingsSchema.index({ _id: 1 }, { unique: true }); // REMOVE THIS LINE
 
 // Static method to get settings (creates default if none exist)
 settingsSchema.statics.getSettings = async function() {
