@@ -19,7 +19,7 @@ export async function POST(request) {
 
     await connectDB();
     
-    // CHECK SETTINGS FOR AUTO-PUBLISH - ADD THIS BLOCK
+    // CHECK SETTINGS FOR AUTO-PUBLISH
     const settings = await Settings.getSettings();
     
     const { title, content, excerpt, category, tags, featuredImage } = await request.json();
@@ -32,8 +32,8 @@ export async function POST(request) {
       );
     }
 
-    // UPDATED BLOG CREATION WITH AUTO-PUBLISH
-    const newBlog = new Blog({
+    // UPDATED BLOG CREATION WITH EXPLICIT SLUG GENERATION
+    const blogData = {
       title,
       content,
       excerpt,
@@ -41,19 +41,40 @@ export async function POST(request) {
       category,
       tags: tags || [],
       featuredImage,
-      status: settings.autoPublish ? 'published' : 'pending', // Auto-publish based on settings
-      publishedAt: settings.autoPublish ? new Date() : null, // Set publish date if auto-publishing
-    });
+      status: settings.autoPublish ? 'published' : 'pending',
+      publishedAt: settings.autoPublish ? new Date() : null,
+    };
+    
+    // Generate unique slug before creating the blog
+    let baseSlug = title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-zA-Z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .substring(0, 50)
+      .replace(/^-+|-+$/g, '') || 'untitled-post';
+    
+    let slug = baseSlug;
+    let counter = 1;
+    
+    // Ensure unique slug
+    while (await Blog.findOne({ slug })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    
+    blogData.slug = slug;
 
+    const newBlog = new Blog(blogData);
     const savedBlog = await newBlog.save();
     const populatedBlog = await savedBlog.populate('author', 'name email department');
 
-    // UPDATED RESPONSE MESSAGE
     const message = settings.autoPublish 
       ? 'Blog published successfully!' 
       : 'Blog submitted for review!';
 
-    console.log(`📝 Blog "${title}" ${settings.autoPublish ? 'published' : 'submitted'} by ${session.user.name}`);
+    console.log(`📝 Blog "${title}" ${settings.autoPublish ? 'published' : 'submitted'} by ${session.user.name} with slug: ${slug}`);
 
     return NextResponse.json({ 
       blog: populatedBlog,
@@ -63,6 +84,14 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Create blog error:', error);
+    
+    // Handle duplicate key errors specifically
+    if (error.code === 11000 && error.keyPattern?.slug) {
+      return NextResponse.json(
+        { error: 'A blog with this title already exists. Please use a different title.' },
+        { status: 400 }
+      );
+    }
     
     if (error.name === 'ValidationError') {
       const validationErrors = Object.values(error.errors).map(err => err.message);

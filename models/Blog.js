@@ -72,43 +72,69 @@ const blogSchema = new mongoose.Schema({
   },
   slug: {
     type: String,
+    required: true, // Make slug required to prevent null values
     unique: true,
-    sparse: true,
-    // No longer need default: undefined since we always generate slugs
   },
 }, {
   timestamps: true,
 });
 
-// Helper function to generate slug
+// Helper function to generate slug with better fallbacks
 function generateSlug(title) {
-  return title
+  if (!title || typeof title !== 'string') {
+    return 'untitled-post';
+  }
+  
+  let slug = title
     .toLowerCase()
-    .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
+    .trim()
+    .replace(/[^a-zA-Z0-9\s-]/g, '') // Remove special characters but keep hyphens
     .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
     .substring(0, 50) // Limit length
-    .replace(/-+$/, ''); // Remove trailing hyphens
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+  
+  // If slug is empty after processing, use fallback
+  if (!slug || slug.length === 0) {
+    slug = 'untitled-post';
+  }
+  
+  return slug;
 }
 
-// Generate unique slug before saving
+// Generate unique slug before saving - MORE ROBUST VERSION
 blogSchema.pre('save', async function(next) {
-  // Generate slug when title is modified or when creating new blog
-  if (this.isModified('title') || this.isNew) {
-    if (!this.slug) { // Only generate if slug doesn't exist
+  try {
+    // Always ensure we have a slug
+    if (!this.slug || this.isModified('title')) {
       const baseSlug = generateSlug(this.title);
       let slug = baseSlug;
       let counter = 1;
       
       // Check for existing slugs and make unique
-      while (await mongoose.models.Blog.findOne({ slug, _id: { $ne: this._id } })) {
+      let existingBlog = await mongoose.models.Blog.findOne({ 
+        slug, 
+        _id: { $ne: this._id } 
+      });
+      
+      while (existingBlog) {
         slug = `${baseSlug}-${counter}`;
         counter++;
+        existingBlog = await mongoose.models.Blog.findOne({ 
+          slug, 
+          _id: { $ne: this._id } 
+        });
       }
       
       this.slug = slug;
     }
+    
+    next();
+  } catch (error) {
+    // If slug generation fails, create a unique fallback
+    this.slug = `post-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    next();
   }
-  next();
 });
 
 // Set publishedAt when status changes to published
@@ -119,11 +145,11 @@ blogSchema.pre('save', function(next) {
   next();
 });
 
-// Create indexes (REMOVED DUPLICATE SLUG INDEX)
+// Create indexes
 blogSchema.index({ status: 1, publishedAt: -1 });
 blogSchema.index({ category: 1, status: 1 });
 blogSchema.index({ author: 1 });
 blogSchema.index({ tags: 1 });
-blogSchema.index({ slug: 1 }, { sparse: true }); // Sparse index allows multiple nulls
+blogSchema.index({ slug: 1 }, { unique: true });
 
 export default mongoose.models.Blog || mongoose.model('Blog', blogSchema);
