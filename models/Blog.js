@@ -73,7 +73,8 @@ const blogSchema = new mongoose.Schema({
   slug: {
     type: String,
     unique: true,
-    sparse: true, // This allows multiple null values
+    sparse: true,
+    // No longer need default: undefined since we always generate slugs
   },
 }, {
   timestamps: true,
@@ -91,9 +92,9 @@ function generateSlug(title) {
 
 // Generate unique slug before saving
 blogSchema.pre('save', async function(next) {
-  // Only generate slug when title is modified and status is published
-  if (this.isModified('title') || (this.isModified('status') && this.status === 'published')) {
-    if (this.status === 'published' && !this.slug) {
+  // Generate slug when title is modified or when creating new blog
+  if (this.isModified('title') || this.isNew) {
+    if (!this.slug) { // Only generate if slug doesn't exist
       const baseSlug = generateSlug(this.title);
       let slug = baseSlug;
       let counter = 1;

@@ -17,11 +17,12 @@ import {
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
-async function getBlog(id) {
+async function getBlog(idOrSlug) {
   try {
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/blogs/${id}`, {
-      cache: 'no-store' // Always fetch fresh data
+    // The API now handles both IDs and slugs
+    const response = await fetch(`${baseUrl}/api/blogs/${idOrSlug}`, {
+      cache: 'no-store'
     });
     
     if (!response.ok) {
@@ -36,7 +37,7 @@ async function getBlog(id) {
 }
 
 export async function generateMetadata({ params }) {
-  // Await params in Next.js 15
+  // Parameter is 'id' but can be either ID or slug
   const { id } = await params;
   const data = await getBlog(id);
   
@@ -59,19 +60,23 @@ export async function generateMetadata({ params }) {
       images: [blog.featuredImage],
       type: 'article',
       publishedTime: blog.publishedAt,
-      authors: [blog.author.name]
+      authors: [blog.author.name],
+      url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/blog/${blog.slug || blog._id}`
     },
     twitter: {
       card: 'summary_large_image',
       title: blog.title,
       description: blog.excerpt,
       images: [blog.featuredImage],
+    },
+    alternates: {
+      canonical: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/blog/${blog.slug || blog._id}`
     }
   };
 }
 
 export default async function BlogDetailPage({ params }) {
-  // Await params in Next.js 15
+  // Parameter is 'id' but can be either ID or slug
   const { id } = await params;
   const data = await getBlog(id);
   
@@ -161,7 +166,7 @@ export default async function BlogDetailPage({ params }) {
               {/* Share Buttons */}
               <div className="mb-8">
                 <ShareButtons 
-                  url={`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/blog/${blog._id}`}
+                  url={`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/blog/${blog.slug || blog._id}`}
                   title={blog.title}
                   description={blog.excerpt}
                 />
