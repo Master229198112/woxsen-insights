@@ -19,7 +19,17 @@ export async function GET(request, { params }) {
     const tag = searchParams.get('tag') || '';
 
     // Validate category
-    const validCategories = ['research', 'achievements', 'publications', 'events', 'patents'];
+    const validCategories = [
+      'research', 
+      'achievements', 
+      'publications', 
+      'events', 
+      'patents',
+      'case-studies',
+      'blogs',
+      'industry-collaborations'
+    ];
+
     if (!validCategories.includes(slug)) {
       return NextResponse.json(
         { error: 'Invalid category' },

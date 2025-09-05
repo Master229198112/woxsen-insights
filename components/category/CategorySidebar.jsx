@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Trophy, Lightbulb, Calendar, Tag, User } from 'lucide-react';
+import { BookOpen, Trophy, Lightbulb, Calendar, Tag, User, Search, PenTool, Handshake } from 'lucide-react';
 
 const categoryIcons = {
   research: BookOpen,
@@ -9,6 +9,9 @@ const categoryIcons = {
   publications: Lightbulb,
   events: Calendar,
   patents: Lightbulb,
+  'case-studies': Search,
+  blogs: PenTool,
+  'industry-collaborations': Handshake,
 };
 
 export default function CategorySidebar({ data, currentCategory }) {
@@ -18,6 +21,9 @@ export default function CategorySidebar({ data, currentCategory }) {
     { slug: 'publications', name: 'Publications', icon: Lightbulb },
     { slug: 'events', name: 'Events', icon: Calendar },
     { slug: 'patents', name: 'Patents', icon: Lightbulb },
+    { slug: 'case-studies', name: 'Case Studies', icon: Search },
+    { slug: 'blogs', name: 'Blogs', icon: PenTool },
+    { slug: 'industry-collaborations', name: 'Industry Collaborations', icon: Handshake },
   ].filter(cat => cat.slug !== currentCategory);
 
   return (

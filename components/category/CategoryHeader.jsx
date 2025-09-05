@@ -1,4 +1,4 @@
-import { BookOpen, Trophy, Lightbulb, Calendar, Eye, Users, FileText } from 'lucide-react';
+import { BookOpen, Trophy, Lightbulb, Calendar, Eye, Users, FileText, Search, PenTool, Handshake } from 'lucide-react';
 
 const iconMap = {
   research: BookOpen,
@@ -6,6 +6,9 @@ const iconMap = {
   publications: Lightbulb,
   events: Calendar,
   patents: Lightbulb,
+  'case-studies': Search,
+  blogs: PenTool,
+  'industry-collaborations': Handshake,
 };
 
 const colorMap = {
@@ -14,6 +17,9 @@ const colorMap = {
   green: 'from-green-600 to-green-800',
   purple: 'from-purple-600 to-purple-800',
   pink: 'from-pink-600 to-pink-800',
+  indigo: 'from-indigo-600 to-indigo-800',
+  emerald: 'from-emerald-600 to-emerald-800',
+  cyan: 'from-cyan-600 to-cyan-800',
 };
 
 export default function CategoryHeader({ info, stats }) {

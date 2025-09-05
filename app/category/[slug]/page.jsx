@@ -41,6 +41,27 @@ const categoryInfo = {
     longDescription: 'Discover the innovative solutions and intellectual property created by our researchers. Explore patents and inventions that contribute to technological advancement.',
     icon: '💡',
     color: 'pink'
+  },
+  'case-studies': {
+    title: 'Case Studies',
+    description: 'Real-world business case studies and practical applications from industry leaders',
+    longDescription: 'Dive deep into real-world business scenarios and learn from practical applications. Analyze successful strategies, challenges, and solutions from leading companies.',
+    icon: '🔍',
+    color: 'indigo'
+  },
+  blogs: {
+    title: 'Blogs',
+    description: 'General insights, opinions, and thought leadership pieces from our community',
+    longDescription: 'Read diverse perspectives and thought-provoking insights from our faculty and students. Share ideas, opinions, and personal experiences in the business world.',
+    icon: '✍️',
+    color: 'emerald'
+  },
+  'industry-collaborations': {
+    title: 'Industry Collaborations',
+    description: 'Partnerships, collaborations, and strategic industry connections',
+    longDescription: 'Explore our partnerships with industry leaders and collaborative projects. Learn about joint initiatives, corporate partnerships, and industry engagement programs.',
+    icon: '🤝',
+    color: 'cyan'
   }
 };
 

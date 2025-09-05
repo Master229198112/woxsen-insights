@@ -66,11 +66,14 @@ export default function CreateBlog() {
   }
 
   const categories = [
-    { value: 'research', label: 'Research', description: 'Academic research and findings' },
-    { value: 'achievements', label: 'Achievements', description: 'Student and faculty accomplishments' },
-    { value: 'publications', label: 'Publications', description: 'Published papers and articles' },
+    { value: 'research', label: 'Research', description: 'Academic studies and findings' },
+    { value: 'achievements', label: 'Achievements', description: 'Awards and accomplishments' },
+    { value: 'publications', label: 'Publications', description: 'Journal articles and papers' },
     { value: 'events', label: 'Events', description: 'Campus events and conferences' },
     { value: 'patents', label: 'Patents', description: 'Innovation and intellectual property' },
+    { value: 'case-studies', label: 'Case Studies', description: 'Real-world business scenarios' },
+    { value: 'blogs', label: 'Blogs', description: 'Insights and thought leadership' },
+    { value: 'industry-collaborations', label: 'Industry Collaborations', description: 'Partnerships and collaborations' }
   ];
 
   const handleSubmit = async (e) => {
@@ -279,19 +282,19 @@ export default function CreateBlog() {
                 </label>
                 <select
                   id="category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  className="w-full h-10 px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Select a category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.value} value={cat.value}>
-                      {cat.label} - {cat.description}
-                    </option>
-                  ))}
-                </select>
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.value} value={cat.value}>
+                        {cat.label} - {cat.description}
+                      </option>
+                    ))}
+                  </select>
               </div>
             </CardContent>
           </Card>

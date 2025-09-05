@@ -23,7 +23,7 @@ export default function Footer() {
               Sharing insights, research, and achievements from Woxsen University School of Business. 
               Discover the latest in academic excellence, innovation, and thought leadership.
             </p>
-            <div className="flex space-x-4">
+            {/* <div className="flex space-x-4">
               <a href="#" className="text-gray-400 hover:text-white transition-colors">
                 LinkedIn
               </a>
@@ -33,7 +33,7 @@ export default function Footer() {
               <a href="#" className="text-gray-400 hover:text-white transition-colors">
                 Facebook
               </a>
-            </div>
+            </div> */}
           </div>
 
           {/* Quick Links */}
@@ -81,11 +81,11 @@ export default function Footer() {
               </li>
               <li className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-gray-400" />
-                <span className="text-gray-300 text-sm">insights@woxsen.edu.in</span>
+                <span className="text-gray-300 text-sm">airesearchcentre@woxsen.edu.in</span>
               </li>
               <li className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-gray-400" />
-                <span className="text-gray-300 text-sm">+91 40 2215 1500</span>
+                <span className="text-gray-300 text-sm">+91 9154674599</span>
               </li>
             </ul>
           </div>

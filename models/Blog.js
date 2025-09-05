@@ -23,7 +23,7 @@ const blogSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['research', 'achievements', 'publications', 'events', 'patents'],
+    enum: ['research', 'achievements', 'publications', 'events', 'patents','case-studies','blogs','industry-collaborations'],
     required: [true, 'Category is required'],
   },
   tags: [{
