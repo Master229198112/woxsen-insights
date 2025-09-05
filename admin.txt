@@ -1,6 +1,0 @@
-┣ 📂blogs
-┃ ┗ 📜page.jsx
-┣ 📂users
-┃ ┗ 📜page.jsx
-┣ 📜layout.jsx
-┗ 📜page.jsx
