@@ -49,6 +49,14 @@ export async function GET(request) {
       author: userId, 
       status: 'published' 
     });
+    const draftCount = await Blog.countDocuments({ 
+      author: userId, 
+      status: 'draft' 
+    });
+    const rejectedCount = await Blog.countDocuments({ 
+      author: userId, 
+      status: 'rejected' 
+    });
     const totalCount = await Blog.countDocuments({ 
       author: userId 
     });
@@ -60,13 +68,15 @@ export async function GET(request) {
     ]);
     const totalViews = viewsResult.length > 0 ? viewsResult[0].totalViews : 0;
 
-    console.log('📊 User stats - Pending:', pendingCount, 'Published:', publishedCount, 'Total:', totalCount, 'Views:', totalViews);
+    console.log('📊 User stats - Pending:', pendingCount, 'Published:', publishedCount, 'Drafts:', draftCount, 'Rejected:', rejectedCount, 'Total:', totalCount, 'Views:', totalViews);
 
     return NextResponse.json({ 
       blogs,
       stats: {
         pending: pendingCount,
         published: publishedCount,
+        draft: draftCount,
+        rejected: rejectedCount,
         total: totalCount,
         totalViews: totalViews
       }

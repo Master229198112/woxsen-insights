@@ -46,7 +46,45 @@ const blogSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['draft', 'pending', 'approved', 'published', 'rejected'],
-    default: 'pending',
+    default: 'draft',
+  },
+  isDraft: {
+    type: Boolean,
+    default: true,
+  },
+  draftContent: {
+    type: String, // For auto-saved drafts
+  },
+  lastEditedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  editHistory: [{
+    editedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    editedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    changes: {
+      type: String, // Description of what was changed
+    },
+    version: {
+      type: Number,
+      default: 1,
+    }
+  }],
+  autoSaveData: {
+    title: String,
+    content: String,
+    excerpt: String,
+    lastSaved: {
+      type: Date,
+      default: Date.now,
+    }
   },
   isHeroPost: {
     type: Boolean,
@@ -70,6 +108,24 @@ const blogSchema = new mongoose.Schema({
   rejectionReason: {
     type: String,
   },
+  rejectionHistory: [{
+    reason: {
+      type: String,
+      required: true,
+    },
+    rejectedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    rejectedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    customReason: {
+      type: String, // Custom rejection reason input
+    }
+  }],
   slug: {
     type: String,
     required: true, // Make slug required to prevent null values
@@ -144,6 +200,37 @@ blogSchema.pre('save', function(next) {
   }
   next();
 });
+
+// Track edit history
+blogSchema.pre('save', function(next) {
+  if (!this.isNew && this.isModified()) {
+    const modifiedFields = this.modifiedPaths();
+    const contentFields = ['title', 'content', 'excerpt', 'featuredImage', 'category', 'tags'];
+    const hasContentChanges = modifiedFields.some(field => contentFields.includes(field));
+    
+    if (hasContentChanges && this.lastEditedBy) {
+      const version = this.editHistory.length + 1;
+      const changes = modifiedFields.filter(field => contentFields.includes(field)).join(', ');
+      
+      this.editHistory.push({
+        editedBy: this.lastEditedBy,
+        editedAt: new Date(),
+        changes: `Modified: ${changes}`,
+        version: version
+      });
+    }
+  }
+  next();
+});
+
+// Auto-save method
+blogSchema.methods.autoSave = function(data) {
+  this.autoSaveData = {
+    ...data,
+    lastSaved: new Date()
+  };
+  return this.save({ validateBeforeSave: false });
+};
 
 // Create indexes (REMOVED DUPLICATE SLUG INDEX)
 blogSchema.index({ status: 1, publishedAt: -1 });

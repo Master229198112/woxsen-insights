@@ -4,6 +4,7 @@ import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import NotificationBell from '@/components/notifications/NotificationBell';
 import { 
   GraduationCap, 
   PenTool, 
@@ -199,6 +200,8 @@ export default function Navbar() {
                     </Button>
                   </Link>
                 )}
+
+                <NotificationBell />
 
                 <div className="flex items-center space-x-2">
                   <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">

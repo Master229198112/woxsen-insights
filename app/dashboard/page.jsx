@@ -26,6 +26,8 @@ export default function UserDashboard() {
   const [stats, setStats] = useState({ 
     pending: 0, 
     published: 0, 
+    draft: 0,
+    rejected: 0,
     total: 0, 
     totalViews: 0 
   });
@@ -90,7 +92,7 @@ export default function UserDashboard() {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -98,6 +100,18 @@ export default function UserDashboard() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">My Blogs</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <FileText className="h-8 w-8 text-gray-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Drafts</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.draft}</p>
                 </div>
               </div>
             </CardContent>
@@ -225,38 +239,61 @@ export default function UserDashboard() {
               ) : (
                 <div className="space-y-4">
                   {blogs.slice(0, 3).map((blog) => (
-                    <div key={blog._id} className="flex items-center space-x-4 p-4 border rounded-lg">
-                      <div className="w-16 h-12 relative rounded overflow-hidden flex-shrink-0">
-                        <Image
-                          src={blog.featuredImage}
-                          alt={blog.title}
-                          fill
-                          className="object-cover"
-                        />
+                  <div key={blog._id} className="flex items-center space-x-4 p-4 border rounded-lg">
+                  <div className="w-16 h-12 relative rounded overflow-hidden flex-shrink-0">
+                  <Image
+                  src={blog.featuredImage}
+                  alt={blog.title}
+                  fill
+                  className="object-cover"
+                  />
+                  </div>
+                  
+                  <div className="flex-1">
+                  <h4 className="font-medium text-gray-900 line-clamp-1">{blog.title}</h4>
+                  <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                  blog.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                  blog.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  blog.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                    blog.status === 'published' ? 'bg-green-100 text-green-800' :
+                  'bg-red-100 text-red-800'
+                  }`}>
+                    {blog.status}
+                  </span>
+                  <span className="flex items-center">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {new Date(blog.createdAt).toLocaleDateString()}
+                  </span>
+                  <span className="flex items-center">
+                    <Eye className="h-3 w-3 mr-1" />
+                      {blog.views}
+                      </span>
                       </div>
-                      
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900 line-clamp-1">{blog.title}</h4>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                            blog.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            blog.status === 'published' ? 'bg-green-100 text-green-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {blog.status}
-                          </span>
-                          <span className="flex items-center">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {new Date(blog.createdAt).toLocaleDateString()}
-                          </span>
-                          <span className="flex items-center">
-                            <Eye className="h-3 w-3 mr-1" />
-                            {blog.views}
-                          </span>
+                      </div>
+                        
+                        {/* Action buttons */}
+                        <div className="flex items-center space-x-2">
+                          {(blog.status === 'draft' || blog.status === 'rejected') && (
+                            <Link href={`/dashboard/edit/${blog._id}`}>
+                              <Button size="sm" variant="outline">
+                                <PenTool className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+                            </Link>
+                          )}
+                          
+                          {blog.status === 'published' && (
+                            <Link href={`/blog/${blog.slug || blog._id}`}>
+                              <Button size="sm" variant="outline">
+                                <Eye className="h-3 w-3 mr-1" />
+                                View
+                              </Button>
+                            </Link>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                   
                   {blogs.length > 3 && (
                     <div className="text-center pt-4">

@@ -247,7 +247,7 @@ const RejectionModal = ({ isOpen, onClose, onSubmit, loading }) => {
   );
 };
 
-export default function AdminBlogs() {
+export default function EnhancedAdminBlogs() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [blogs, setBlogs] = useState([]);
@@ -467,7 +467,7 @@ export default function AdminBlogs() {
                     {/* Content */}
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-3">
-                        <div>
+                        <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-2">
                             <h3 className="text-xl font-semibold text-gray-900 line-clamp-1">
                               {blog.title}
