@@ -69,12 +69,14 @@ async function getCategoryData(slug, searchParams) {
   try {
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
     
-    // FIX: Safely extract only string key-value pairs from searchParams
+    // FIX: Await searchParams first, then safely extract string key-value pairs
+    const awaitedSearchParams = await searchParams;
     const cleanParams = {};
-    if (searchParams) {
-      Object.keys(searchParams).forEach(key => {
-        if (typeof key === 'string' && typeof searchParams[key] === 'string') {
-          cleanParams[key] = searchParams[key];
+    
+    if (awaitedSearchParams) {
+      Object.keys(awaitedSearchParams).forEach(key => {
+        if (typeof key === 'string' && typeof awaitedSearchParams[key] === 'string') {
+          cleanParams[key] = awaitedSearchParams[key];
         }
       });
     }
@@ -146,7 +148,7 @@ export default async function CategoryPage({ params, searchParams }) {
               <CategoryContent 
                 data={data} 
                 info={info}
-                searchParams={searchParams}
+                searchParams={await searchParams}
               />
             </Suspense>
           </div>
@@ -165,4 +167,3 @@ export default async function CategoryPage({ params, searchParams }) {
     </div>
   );
 }
- 

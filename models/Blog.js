@@ -73,7 +73,7 @@ const blogSchema = new mongoose.Schema({
   slug: {
     type: String,
     required: true, // Make slug required to prevent null values
-    unique: true,
+    unique: true, // This already creates the index we need
   },
 }, {
   timestamps: true,
@@ -145,11 +145,12 @@ blogSchema.pre('save', function(next) {
   next();
 });
 
-// Create indexes
+// Create indexes (REMOVED DUPLICATE SLUG INDEX)
 blogSchema.index({ status: 1, publishedAt: -1 });
 blogSchema.index({ category: 1, status: 1 });
 blogSchema.index({ author: 1 });
 blogSchema.index({ tags: 1 });
-blogSchema.index({ slug: 1 }, { unique: true });
+// REMOVED: blogSchema.index({ slug: 1 }, { unique: true }); 
+// The slug index is already created by the "unique: true" in the schema definition
 
 export default mongoose.models.Blog || mongoose.model('Blog', blogSchema);

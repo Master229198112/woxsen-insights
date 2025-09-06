@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -25,7 +25,8 @@ export default function Navbar() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // ADD MOBILE MENU STATE
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const categories = [
     { 
@@ -78,14 +79,39 @@ export default function Navbar() {
     }
   ];
 
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setCategoriesOpen(false);
+      }
+    }
+
+    if (categoriesOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [categoriesOpen]);
+
+  // Close dropdown when route changes
+  useEffect(() => {
+    setCategoriesOpen(false);
+    setMobileMenuOpen(false);
+  }, [router]);
+
   const handleSignOut = async () => {
     await signOut({ redirect: false });
     router.push('/');
   };
 
-  // CLOSE MOBILE MENU WHEN LINK IS CLICKED
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
+  };
+
+  const handleCategoryClick = () => {
+    setCategoriesOpen(false);
   };
 
   return (
@@ -113,11 +139,10 @@ export default function Navbar() {
             </Link>
 
             {/* Categories Dropdown */}
-            <div className="relative">
+            <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setCategoriesOpen(!categoriesOpen)}
                 className="flex items-center text-gray-700 hover:text-blue-600 font-medium transition-colors"
-                onBlur={() => setTimeout(() => setCategoriesOpen(false), 200)}
               >
                 Categories
                 <ChevronDown className={`ml-1 h-4 w-4 transition-transform ${categoriesOpen ? 'rotate-180' : ''}`} />
@@ -133,7 +158,7 @@ export default function Navbar() {
                           key={category.href}
                           href={category.href}
                           className="flex items-center px-4 py-3 hover:bg-gray-50 transition-colors"
-                          onClick={() => setCategoriesOpen(false)}
+                          onClick={handleCategoryClick}
                         >
                           <IconComponent className="h-5 w-5 text-gray-400 mr-3" />
                           <div>
