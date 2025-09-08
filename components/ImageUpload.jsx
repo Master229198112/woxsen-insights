@@ -323,8 +323,7 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
         <p className="text-blue-800 text-sm font-medium mb-2">Supported Image Sources:</p>
         <div className="text-blue-700 text-xs space-y-1">
           <p><strong>Upload:</strong> JPG, PNG, WEBP (max 5MB)</p>
-          <p><strong>External URLs from:</strong> Google Drive, OneDrive, Dropbox, Imgur, Unsplash, Pexels, GitHub, University domains</p>
-          <p><strong>Tip:</strong> For Google Drive, use "Get link" and ensure it's set to "Anyone with the link can view"</p>
+          <p><strong>External URLs from:</strong> Imgur, Pexels, GitHub, University domains (URL must end with image format eg. .jpg, .png, etc.)</p>
         </div>
       </div>
     </div>
