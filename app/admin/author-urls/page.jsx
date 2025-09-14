@@ -111,9 +111,9 @@ export default function AuthorURLManagement() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className=\"min-h-screen bg-gray-50 flex items-center justify-center\">
-        <div className=\"flex items-center space-x-2\">
-          <RefreshCw className=\"h-6 w-6 animate-spin text-blue-600\" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center space-x-2">
+          <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
           <span>Loading...</span>
         </div>
       </div>
@@ -125,135 +125,135 @@ export default function AuthorURLManagement() {
   }
 
   return (
-    <div className=\"min-h-screen bg-gray-50\">
-      <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8\">
-        <div className=\"mb-8\">
-          <h1 className=\"text-3xl font-bold text-gray-900 mb-4\">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
             Author URL Management
           </h1>
-          <p className=\"text-gray-600 mb-6\">
+          <p className="text-gray-600 mb-6">
             Manage author profile URLs and generate usernames for the new slug-based system.
           </p>
 
           {message && (
-            <Alert className=\"mb-4\">
-              <CheckCircle className=\"h-4 w-4\" />
+            <Alert className="mb-4">
+              <CheckCircle className="h-4 w-4" />
               <AlertDescription>{message}</AlertDescription>
             </Alert>
           )}
 
           {error && (
-            <Alert variant=\"destructive\" className=\"mb-4\">
-              <AlertCircle className=\"h-4 w-4\" />
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          <div className=\"flex gap-4 mb-6\">
+          <div className="flex gap-4 mb-6">
             <Button
               onClick={() => generateUsernames()}
               disabled={generating}
-              className=\"flex items-center\"
+              className="flex items-center"
             >
               {generating ? (
-                <RefreshCw className=\"h-4 w-4 mr-2 animate-spin\" />
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <Users className=\"h-4 w-4 mr-2\" />
+                <Users className="h-4 w-4 mr-2" />
               )}
               Generate All Usernames
             </Button>
             
             <Button
               onClick={fetchAuthors}
-              variant=\"outline\"
-              className=\"flex items-center\"
+              variant="outline"
+              className="flex items-center"
             >
-              <RefreshCw className=\"h-4 w-4 mr-2\" />
+              <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
           </div>
         </div>
 
-        <div className=\"grid gap-6\">
+        <div className="grid gap-6">
           <Card>
             <CardHeader>
-              <CardTitle className=\"flex items-center\">
-                <Users className=\"h-5 w-5 mr-2\" />
+              <CardTitle className="flex items-center">
+                <Users className="h-5 w-5 mr-2" />
                 Authors ({authors.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className=\"space-y-4\">
+              <div className="space-y-4">
                 {authors.map((author) => {
                   const hasUsername = author.username;
                   const oldUrl = `/author/${author._id}`;
                   const newUrl = `/author/${generateSlug(author)}`;
                   
                   return (
-                    <div key={author._id} className=\"border rounded-lg p-4 bg-white\">
-                      <div className=\"flex items-start justify-between\">
-                        <div className=\"flex-1\">
-                          <h3 className=\"font-semibold text-lg text-gray-900\">
+                    <div key={author._id} className="border rounded-lg p-4 bg-white">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg text-gray-900">
                             {author.name}
                           </h3>
-                          <p className=\"text-gray-600 text-sm mb-2\">
+                          <p className="text-gray-600 text-sm mb-2">
                             {author.department} • {author.email}
                           </p>
                           
-                          <div className=\"space-y-2\">
-                            <div className=\"flex items-center space-x-2\">
-                              <span className=\"text-sm font-medium text-gray-500\">Username:</span>
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-medium text-gray-500">Username:</span>
                               {hasUsername ? (
-                                <span className=\"text-sm font-mono bg-green-100 text-green-800 px-2 py-1 rounded\">
+                                <span className="text-sm font-mono bg-green-100 text-green-800 px-2 py-1 rounded">
                                   {author.username}
                                 </span>
                               ) : (
-                                <span className=\"text-sm text-gray-400 italic\">Not set</span>
+                                <span className="text-sm text-gray-400 italic">Not set</span>
                               )}
                             </div>
                             
-                            <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4 mt-3\">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                               <div>
-                                <label className=\"text-xs font-medium text-gray-500 uppercase tracking-wider\">
+                                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                                   Old URL (ID-based)
                                 </label>
-                                <div className=\"flex items-center space-x-2 mt-1\">
-                                  <code className=\"text-xs bg-gray-100 px-2 py-1 rounded flex-1 truncate\">
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <code className="text-xs bg-gray-100 px-2 py-1 rounded flex-1 truncate">
                                     {oldUrl}
                                   </code>
                                   <Button
-                                    size=\"sm\"
-                                    variant=\"ghost\"
+                                    size="sm"
+                                    variant="ghost"
                                     onClick={() => copyToClipboard(`${window.location.origin}${oldUrl}`)}
                                   >
-                                    <Copy className=\"h-3 w-3\" />
+                                    <Copy className="h-3 w-3" />
                                   </Button>
-                                  <Link href={oldUrl} target=\"_blank\">
-                                    <Button size=\"sm\" variant=\"ghost\">
-                                      <Eye className=\"h-3 w-3\" />
+                                  <Link href={oldUrl} target="_blank">
+                                    <Button size="sm" variant="ghost">
+                                      <Eye className="h-3 w-3" />
                                     </Button>
                                   </Link>
                                 </div>
                               </div>
                               
                               <div>
-                                <label className=\"text-xs font-medium text-gray-500 uppercase tracking-wider\">
+                                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                                   New URL (Slug-based)
                                 </label>
-                                <div className=\"flex items-center space-x-2 mt-1\">
-                                  <code className=\"text-xs bg-blue-50 px-2 py-1 rounded flex-1 truncate\">
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <code className="text-xs bg-blue-50 px-2 py-1 rounded flex-1 truncate">
                                     {newUrl}
                                   </code>
                                   <Button
-                                    size=\"sm\"
-                                    variant=\"ghost\"
+                                    size="sm"
+                                    variant="ghost"
                                     onClick={() => copyToClipboard(`${window.location.origin}${newUrl}`)}
                                   >
-                                    <Copy className=\"h-3 w-3\" />
+                                    <Copy className="h-3 w-3" />
                                   </Button>
-                                  <Link href={newUrl} target=\"_blank\">
-                                    <Button size=\"sm\" variant=\"ghost\">
-                                      <Eye className=\"h-3 w-3\" />
+                                  <Link href={newUrl} target="_blank">
+                                    <Button size="sm" variant="ghost">
+                                      <Eye className="h-3 w-3" />
                                     </Button>
                                   </Link>
                                 </div>
@@ -262,20 +262,20 @@ export default function AuthorURLManagement() {
                           </div>
                         </div>
                         
-                        <div className=\"ml-4 flex flex-col space-y-2\">
+                        <div className="ml-4 flex flex-col space-y-2">
                           {hasUsername ? (
-                            <div className=\"flex items-center text-green-600\">
-                              <CheckCircle className=\"h-4 w-4 mr-1\" />
-                              <span className=\"text-sm\">Ready</span>
+                            <div className="flex items-center text-green-600">
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              <span className="text-sm">Ready</span>
                             </div>
                           ) : (
                             <>
-                              <div className=\"flex items-center text-yellow-600\">
-                                <AlertCircle className=\"h-4 w-4 mr-1\" />
-                                <span className=\"text-sm\">No Username</span>
+                              <div className="flex items-center text-yellow-600">
+                                <AlertCircle className="h-4 w-4 mr-1" />
+                                <span className="text-sm">No Username</span>
                               </div>
                               <Button
-                                size=\"sm\"
+                                size="sm"
                                 onClick={() => generateUsernames(author._id)}
                                 disabled={generating}
                               >
