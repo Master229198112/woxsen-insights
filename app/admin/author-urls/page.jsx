@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   RefreshCw, 
   ExternalLink, 
@@ -136,17 +135,17 @@ export default function AuthorURLManagement() {
           </p>
 
           {message && (
-            <Alert className="mb-4">
-              <CheckCircle className="h-4 w-4" />
-              <AlertDescription>{message}</AlertDescription>
-            </Alert>
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center">
+              <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+              <span className="text-green-800">{message}</span>
+            </div>
           )}
 
           {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
+              <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+              <span className="text-red-800">{error}</span>
+            </div>
           )}
 
           <div className="flex gap-4 mb-6">
