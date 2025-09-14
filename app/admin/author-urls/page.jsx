@@ -96,8 +96,8 @@ export default function AuthorURLManagement() {
     // Generate slug from name
     return author.name
       .toLowerCase()
-      .replace(/[^a-zA-Z0-9\\s-]/g, '')
-      .replace(/\\s+/g, '-')
+      .replace(/[^a-zA-Z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .substring(0, 30)
       .replace(/^-+|-+$/g, '');

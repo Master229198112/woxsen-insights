@@ -1,1 +1,321 @@
-import { NextRequest, NextResponse } from 'next/server';\nimport { v2 as cloudinary } from 'cloudinary';\nimport { getServerSession } from 'next-auth';\nimport { authOptions } from '@/app/api/auth/[...nextauth]/route';\n\n// Configure Cloudinary\ncloudinary.config({\n  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,\n  api_key: process.env.CLOUDINARY_API_KEY,\n  api_secret: process.env.CLOUDINARY_API_SECRET,\n});\n\n// File type configurations\nconst fileConfigs = {\n  image: {\n    allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'],\n    maxSize: 5 * 1024 * 1024, // 5MB\n    folder: 'woxsen-insights/images',\n    resourceType: 'image',\n    transformations: [\n      { width: 1200, height: 800, crop: 'limit', quality: 'auto', fetch_format: 'auto' }\n    ]\n  },\n  pdf: {\n    allowedTypes: ['application/pdf'],\n    maxSize: 10 * 1024 * 1024, // 10MB\n    folder: 'woxsen-insights/documents/pdfs',\n    resourceType: 'raw',\n    generateThumbnail: true\n  },\n  document: {\n    allowedTypes: [\n      'application/msword',\n      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',\n      'text/plain',\n      'application/rtf'\n    ],\n    maxSize: 10 * 1024 * 1024, // 10MB\n    folder: 'woxsen-insights/documents/general',\n    resourceType: 'raw'\n  }\n};\n\nexport async function POST(request) {\n  try {\n    // Check authentication\n    const session = await getServerSession(authOptions);\n    if (!session?.user) {\n      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });\n    }\n\n    const formData = await request.formData();\n    const file = formData.get('file');\n    const fileType = formData.get('fileType') || 'auto'; // 'image', 'pdf', 'document', or 'auto'\n\n    if (!file || !(file instanceof File)) {\n      return NextResponse.json({ error: 'No file provided' }, { status: 400 });\n    }\n\n    // Determine file category\n    let category = fileType;\n    if (fileType === 'auto') {\n      if (file.type.startsWith('image/')) {\n        category = 'image';\n      } else if (file.type === 'application/pdf') {\n        category = 'pdf';\n      } else {\n        category = 'document';\n      }\n    }\n\n    const config = fileConfigs[category];\n    if (!config) {\n      return NextResponse.json({ error: 'Unsupported file category' }, { status: 400 });\n    }\n\n    // Validate file type\n    if (!config.allowedTypes.includes(file.type)) {\n      return NextResponse.json({ \n        error: `Invalid file type. Allowed types: ${config.allowedTypes.join(', ')}` \n      }, { status: 400 });\n    }\n\n    // Validate file size\n    if (file.size > config.maxSize) {\n      return NextResponse.json({ \n        error: `File too large. Maximum size: ${Math.round(config.maxSize / (1024 * 1024))}MB` \n      }, { status: 400 });\n    }\n\n    // Convert File to Buffer\n    const bytes = await file.arrayBuffer();\n    const buffer = Buffer.from(bytes);\n\n    // Generate unique filename\n    const timestamp = Date.now();\n    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');\n    const uniqueFilename = `${timestamp}_${sanitizedName}`;\n\n    // Upload to Cloudinary\n    const uploadOptions = {\n      folder: config.folder,\n      public_id: uniqueFilename,\n      resource_type: config.resourceType,\n      use_filename: false,\n      unique_filename: true,\n      overwrite: false,\n      // Add user info to context for tracking\n      context: {\n        uploaded_by: session.user.email,\n        uploaded_at: new Date().toISOString(),\n        original_name: file.name,\n        file_category: category\n      }\n    };\n\n    // Add transformations for images\n    if (category === 'image' && config.transformations) {\n      uploadOptions.transformation = config.transformations;\n    }\n\n    // Add specific configurations for PDFs\n    if (category === 'pdf') {\n      uploadOptions.flags = 'attachment'; // Ensures proper download behavior\n    }\n\n    const uploadResult = await new Promise((resolve, reject) => {\n      cloudinary.uploader.upload_stream(\n        uploadOptions,\n        (error, result) => {\n          if (error) {\n            console.error('Cloudinary upload error:', error);\n            reject(error);\n          } else {\n            resolve(result);\n          }\n        }\n      ).end(buffer);\n    });\n\n    // Prepare response data\n    const responseData = {\n      success: true,\n      url: uploadResult.secure_url,\n      publicId: uploadResult.public_id,\n      originalFilename: file.name,\n      fileSize: file.size,\n      fileType: file.type,\n      category: category,\n      uploadedAt: new Date().toISOString(),\n      format: uploadResult.format,\n      resourceType: uploadResult.resource_type\n    };\n\n    // For PDFs, try to generate a thumbnail preview\n    if (category === 'pdf' && config.generateThumbnail) {\n      try {\n        // Generate thumbnail of the first page\n        const thumbnailResult = await cloudinary.uploader.upload(uploadResult.secure_url, {\n          folder: `${config.folder}/thumbnails`,\n          public_id: `thumb_${uniqueFilename}`,\n          resource_type: 'image',\n          format: 'jpg',\n          transformation: [\n            { width: 300, height: 400, crop: 'fit', page: 1, quality: 'auto' }\n          ],\n          flags: 'attachment'\n        });\n        \n        responseData.thumbnailUrl = thumbnailResult.secure_url;\n      } catch (thumbError) {\n        console.error('PDF thumbnail generation failed:', thumbError);\n        // Don't fail the upload if thumbnail generation fails\n      }\n    }\n\n    // Add image-specific metadata\n    if (category === 'image') {\n      responseData.width = uploadResult.width;\n      responseData.height = uploadResult.height;\n    }\n\n    return NextResponse.json(responseData, { status: 200 });\n\n  } catch (error) {\n    console.error('File upload error:', error);\n    \n    // Handle specific Cloudinary errors\n    if (error.http_code === 413) {\n      return NextResponse.json(\n        { error: 'File too large for upload service' },\n        { status: 413 }\n      );\n    }\n    \n    if (error.http_code === 415) {\n      return NextResponse.json(\n        { error: 'Unsupported file format' },\n        { status: 415 }\n      );\n    }\n\n    return NextResponse.json(\n      { error: 'File upload failed. Please try again.' },\n      { status: 500 }\n    );\n  }\n}\n\n// GET method to retrieve file information\nexport async function GET(request) {\n  try {\n    const session = await getServerSession(authOptions);\n    if (!session?.user) {\n      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });\n    }\n\n    const { searchParams } = new URL(request.url);\n    const publicId = searchParams.get('publicId');\n    const category = searchParams.get('category') || 'image';\n\n    if (!publicId) {\n      return NextResponse.json({ error: 'Public ID required' }, { status: 400 });\n    }\n\n    const config = fileConfigs[category];\n    if (!config) {\n      return NextResponse.json({ error: 'Invalid category' }, { status: 400 });\n    }\n\n    // Get file details from Cloudinary\n    const result = await cloudinary.api.resource(publicId, {\n      resource_type: config.resourceType\n    });\n\n    const fileInfo = {\n      url: result.secure_url,\n      publicId: result.public_id,\n      format: result.format,\n      fileSize: result.bytes,\n      uploadedAt: result.created_at,\n      resourceType: result.resource_type\n    };\n\n    // Add image-specific data\n    if (category === 'image') {\n      fileInfo.width = result.width;\n      fileInfo.height = result.height;\n    }\n\n    return NextResponse.json({\n      success: true,\n      file: fileInfo\n    });\n\n  } catch (error) {\n    console.error('File info retrieval error:', error);\n    \n    if (error.http_code === 404) {\n      return NextResponse.json({ error: 'File not found' }, { status: 404 });\n    }\n\n    return NextResponse.json(\n      { error: 'Failed to retrieve file information' },\n      { status: 500 }\n    );\n  }\n}\n\n// DELETE method to remove files\nexport async function DELETE(request) {\n  try {\n    const session = await getServerSession(authOptions);\n    if (!session?.user) {\n      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });\n    }\n\n    const { searchParams } = new URL(request.url);\n    const publicId = searchParams.get('publicId');\n    const category = searchParams.get('category') || 'image';\n\n    if (!publicId) {\n      return NextResponse.json({ error: 'Public ID required' }, { status: 400 });\n    }\n\n    const config = fileConfigs[category];\n    if (!config) {\n      return NextResponse.json({ error: 'Invalid category' }, { status: 400 });\n    }\n\n    // Delete from Cloudinary\n    await cloudinary.uploader.destroy(publicId, {\n      resource_type: config.resourceType\n    });\n\n    // If it's a PDF with thumbnail, also delete the thumbnail\n    if (category === 'pdf') {\n      try {\n        const thumbnailPublicId = `${config.folder}/thumbnails/thumb_${publicId.split('/').pop()}`;\n        await cloudinary.uploader.destroy(thumbnailPublicId, {\n          resource_type: 'image'\n        });\n      } catch (thumbError) {\n        console.error('Failed to delete PDF thumbnail:', thumbError);\n        // Don't fail the main delete operation\n      }\n    }\n\n    return NextResponse.json({\n      success: true,\n      message: 'File deleted successfully'\n    });\n\n  } catch (error) {\n    console.error('File deletion error:', error);\n    return NextResponse.json(\n      { error: 'Failed to delete file' },\n      { status: 500 }\n    );\n  }\n}"
+import { NextRequest, NextResponse } from 'next/server';
+import { v2 as cloudinary } from 'cloudinary';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// File type configurations
+const fileConfigs = {
+  image: {
+    allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'],
+    maxSize: 5 * 1024 * 1024, // 5MB
+    folder: 'woxsen-insights/images',
+    resourceType: 'image',
+    transformations: [
+      { width: 1200, height: 800, crop: 'limit', quality: 'auto', fetch_format: 'auto' }
+    ]
+  },
+  pdf: {
+    allowedTypes: ['application/pdf'],
+    maxSize: 10 * 1024 * 1024, // 10MB
+    folder: 'woxsen-insights/documents/pdfs',
+    resourceType: 'raw',
+    generateThumbnail: true
+  },
+  document: {
+    allowedTypes: [
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'application/rtf'
+    ],
+    maxSize: 10 * 1024 * 1024, // 10MB
+    folder: 'woxsen-insights/documents/general',
+    resourceType: 'raw'
+  }
+};
+
+export async function POST(request) {
+  try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const formData = await request.formData();
+    const file = formData.get('file');
+    const fileType = formData.get('fileType') || 'auto'; // 'image', 'pdf', 'document', or 'auto'
+
+    if (!file || !(file instanceof File)) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+
+    // Determine file category
+    let category = fileType;
+    if (fileType === 'auto') {
+      if (file.type.startsWith('image/')) {
+        category = 'image';
+      } else if (file.type === 'application/pdf') {
+        category = 'pdf';
+      } else {
+        category = 'document';
+      }
+    }
+
+    const config = fileConfigs[category];
+    if (!config) {
+      return NextResponse.json({ error: 'Unsupported file category' }, { status: 400 });
+    }
+
+    // Validate file type
+    if (!config.allowedTypes.includes(file.type)) {
+      return NextResponse.json({ 
+        error: `Invalid file type. Allowed types: ${config.allowedTypes.join(', ')}` 
+      }, { status: 400 });
+    }
+
+    // Validate file size
+    if (file.size > config.maxSize) {
+      return NextResponse.json({ 
+        error: `File too large. Maximum size: ${Math.round(config.maxSize / (1024 * 1024))}MB` 
+      }, { status: 400 });
+    }
+
+    // Convert File to Buffer
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const uniqueFilename = `${timestamp}_${sanitizedName}`;
+
+    // Upload to Cloudinary
+    const uploadOptions = {
+      folder: config.folder,
+      public_id: uniqueFilename,
+      resource_type: config.resourceType,
+      use_filename: false,
+      unique_filename: true,
+      overwrite: false,
+      // Add user info to context for tracking
+      context: {
+        uploaded_by: session.user.email,
+        uploaded_at: new Date().toISOString(),
+        original_name: file.name,
+        file_category: category
+      }
+    };
+
+    // Add transformations for images
+    if (category === 'image' && config.transformations) {
+      uploadOptions.transformation = config.transformations;
+    }
+
+    // Add specific configurations for PDFs
+    if (category === 'pdf') {
+      uploadOptions.flags = 'attachment'; // Ensures proper download behavior
+    }
+
+    const uploadResult = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        uploadOptions,
+        (error, result) => {
+          if (error) {
+            console.error('Cloudinary upload error:', error);
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        }
+      ).end(buffer);
+    });
+
+    // Prepare response data
+    const responseData = {
+      success: true,
+      url: uploadResult.secure_url,
+      publicId: uploadResult.public_id,
+      originalFilename: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      category: category,
+      uploadedAt: new Date().toISOString(),
+      format: uploadResult.format,
+      resourceType: uploadResult.resource_type
+    };
+
+    // For PDFs, try to generate a thumbnail preview
+    if (category === 'pdf' && config.generateThumbnail) {
+      try {
+        // Generate thumbnail of the first page
+        const thumbnailResult = await cloudinary.uploader.upload(uploadResult.secure_url, {
+          folder: `${config.folder}/thumbnails`,
+          public_id: `thumb_${uniqueFilename}`,
+          resource_type: 'image',
+          format: 'jpg',
+          transformation: [
+            { width: 300, height: 400, crop: 'fit', page: 1, quality: 'auto' }
+          ],
+          flags: 'attachment'
+        });
+        
+        responseData.thumbnailUrl = thumbnailResult.secure_url;
+      } catch (thumbError) {
+        console.error('PDF thumbnail generation failed:', thumbError);
+        // Don't fail the upload if thumbnail generation fails
+      }
+    }
+
+    // Add image-specific metadata
+    if (category === 'image') {
+      responseData.width = uploadResult.width;
+      responseData.height = uploadResult.height;
+    }
+
+    return NextResponse.json(responseData, { status: 200 });
+
+  } catch (error) {
+    console.error('File upload error:', error);
+    
+    // Handle specific Cloudinary errors
+    if (error.http_code === 413) {
+      return NextResponse.json(
+        { error: 'File too large for upload service' },
+        { status: 413 }
+      );
+    }
+    
+    if (error.http_code === 415) {
+      return NextResponse.json(
+        { error: 'Unsupported file format' },
+        { status: 415 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'File upload failed. Please try again.' },
+      { status: 500 }
+    );
+  }
+}
+
+// GET method to retrieve file information
+export async function GET(request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const publicId = searchParams.get('publicId');
+    const category = searchParams.get('category') || 'image';
+
+    if (!publicId) {
+      return NextResponse.json({ error: 'Public ID required' }, { status: 400 });
+    }
+
+    const config = fileConfigs[category];
+    if (!config) {
+      return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
+    }
+
+    // Get file details from Cloudinary
+    const result = await cloudinary.api.resource(publicId, {
+      resource_type: config.resourceType
+    });
+
+    const fileInfo = {
+      url: result.secure_url,
+      publicId: result.public_id,
+      format: result.format,
+      fileSize: result.bytes,
+      uploadedAt: result.created_at,
+      resourceType: result.resource_type
+    };
+
+    // Add image-specific data
+    if (category === 'image') {
+      fileInfo.width = result.width;
+      fileInfo.height = result.height;
+    }
+
+    return NextResponse.json({
+      success: true,
+      file: fileInfo
+    });
+
+  } catch (error) {
+    console.error('File info retrieval error:', error);
+    
+    if (error.http_code === 404) {
+      return NextResponse.json({ error: 'File not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to retrieve file information' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE method to remove files
+export async function DELETE(request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const publicId = searchParams.get('publicId');
+    const category = searchParams.get('category') || 'image';
+
+    if (!publicId) {
+      return NextResponse.json({ error: 'Public ID required' }, { status: 400 });
+    }
+
+    const config = fileConfigs[category];
+    if (!config) {
+      return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
+    }
+
+    // Delete from Cloudinary
+    await cloudinary.uploader.destroy(publicId, {
+      resource_type: config.resourceType
+    });
+
+    // If it's a PDF with thumbnail, also delete the thumbnail
+    if (category === 'pdf') {
+      try {
+        const thumbnailPublicId = `${config.folder}/thumbnails/thumb_${publicId.split('/').pop()}`;
+        await cloudinary.uploader.destroy(thumbnailPublicId, {
+          resource_type: 'image'
+        });
+      } catch (thumbError) {
+        console.error('Failed to delete PDF thumbnail:', thumbError);
+        // Don't fail the main delete operation
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'File deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('File deletion error:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete file' },
+      { status: 500 }
+    );
+  }
+}
