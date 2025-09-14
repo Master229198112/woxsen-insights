@@ -4,22 +4,18 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Navbar from '@/components/layout/Navbar';
-import { ArrowLeft, User, Save, Mail, Building, Lock, Eye, EyeOff } from 'lucide-react';
+import EnhancedProfileForm from '@/components/profile/EnhancedProfileForm';
+import { ArrowLeft, User, Lock, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 
 export default function EditProfilePage() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
   
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    department: '',
-    bio: ''
-  });
+  const [user, setUser] = useState(null);
+  const [activeSection, setActiveSection] = useState('profile');
   
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -44,21 +40,20 @@ export default function EditProfilePage() {
       return;
     }
 
-    // Initialize form with current user data
-    setFormData({
-      name: session.user.name || '',
-      email: session.user.email || '',
-      department: session.user.department || '',
-      bio: session.user.bio || ''
-    });
+    // Fetch complete user profile data
+    fetchUserProfile();
   }, [session, status, router]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const fetchUserProfile = async () => {
+    try {
+      const response = await fetch('/api/user/profile');
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
   };
 
   const handlePasswordChange = (e) => {
@@ -74,51 +69,6 @@ export default function EditProfilePage() {
       ...prev,
       [field]: !prev[field]
     }));
-  };
-
-  const handleProfileSubmit = async (e) => {
-    e.preventDefault();
-    setLoading({ ...loading, profile: true });
-    setMessage({ type: '', text: '' });
-
-    try {
-      const response = await fetch('/api/user/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        // Update the session with new data
-        await update({
-          ...session,
-          user: {
-            ...session.user,
-            ...formData
-          }
-        });
-        
-        setMessage({ 
-          type: 'success', 
-          text: 'Profile updated successfully!' 
-        });
-      } else {
-        const error = await response.json();
-        setMessage({ 
-          type: 'error', 
-          text: error.message || 'Failed to update profile' 
-        });
-      }
-    } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: 'An error occurred while updating your profile' 
-      });
-    } finally {
-      setLoading({ ...loading, profile: false });
-    }
   };
 
   const handlePasswordSubmit = async (e) => {
@@ -186,7 +136,19 @@ export default function EditProfilePage() {
     }
   };
 
-  if (status === 'loading') {
+  const handleProfileUpdate = (updatedUser) => {
+    setUser(updatedUser);
+    // Update session with new data
+    update({
+      ...session,
+      user: {
+        ...session.user,
+        ...updatedUser
+      }
+    });
+  };
+
+  if (status === 'loading' || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -205,7 +167,7 @@ export default function EditProfilePage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <Link 
@@ -215,140 +177,49 @@ export default function EditProfilePage() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Edit Profile</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
           <p className="text-gray-600 mt-2">
-            Update your personal information and security settings
+            Manage your profile information, privacy settings, and account security
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Profile Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <User className="h-5 w-5 mr-2" />
-                Personal Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleProfileSubmit} className="space-y-6">
-                {/* Profile Picture Placeholder */}
-                <div className="flex items-center space-x-6">
-                  <div className="flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full">
-                    <span className="text-2xl font-bold text-blue-600">
-                      {formData.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900">Profile Picture</h3>
-                    <p className="text-sm text-gray-600">
-                      Profile pictures will be supported in a future update
-                    </p>
-                  </div>
-                </div>
+        {/* Section Navigation */}
+        <div className="flex space-x-1 mb-8 bg-gray-100 p-1 rounded-lg w-fit">
+          <button
+            onClick={() => setActiveSection('profile')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeSection === 'profile'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <User className="h-4 w-4 mr-2 inline" />
+            Profile Information
+          </button>
+          <button
+            onClick={() => setActiveSection('security')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeSection === 'security'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Lock className="h-4 w-4 mr-2 inline" />
+            Security
+          </button>
+        </div>
 
-                {/* Name */}
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name
-                  </label>
-                  <Input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                    placeholder="Enter your full name"
-                  />
-                </div>
+        {/* Profile Section */}
+        {activeSection === 'profile' && (
+          <EnhancedProfileForm 
+            user={user} 
+            onUpdate={handleProfileUpdate} 
+          />
+        )}
 
-                {/* Email (Read-only) */}
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      readOnly
-                      className="w-full pl-10 bg-gray-50 cursor-not-allowed"
-                      placeholder="Email cannot be changed"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Email address cannot be changed for security reasons
-                  </p>
-                </div>
-
-                {/* Department */}
-                <div>
-                  <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-2">
-                    Department
-                  </label>
-                  <div className="relative">
-                    <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      type="text"
-                      id="department"
-                      name="department"
-                      value={formData.department}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full pl-10"
-                      placeholder="e.g., School of Business"
-                    />
-                  </div>
-                </div>
-
-                {/* Bio */}
-                <div>
-                  <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-2">
-                    Bio (Optional)
-                  </label>
-                  <Textarea
-                    id="bio"
-                    name="bio"
-                    value={formData.bio}
-                    onChange={handleInputChange}
-                    rows={4}
-                    className="w-full"
-                    placeholder="Tell us a bit about yourself, your research interests, or your role at Woxsen University..."
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Your bio will be displayed on your published blog posts
-                  </p>
-                </div>
-
-                {/* Submit Button */}
-                <Button 
-                  type="submit" 
-                  disabled={loading.profile}
-                  className="w-full flex items-center justify-center"
-                >
-                  {loading.profile ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Changes
-                    </>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Change Password */}
-          <Card>
+        {/* Security Section */}
+        {activeSection === 'security' && (
+          <Card className="max-w-2xl">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Lock className="h-5 w-5 mr-2" />
@@ -463,9 +334,9 @@ export default function EditProfilePage() {
               </form>
             </CardContent>
           </Card>
-        </div>
+        )}
 
-        {/* Message */}
+        {/* Status Message */}
         {message.text && (
           <div className={`mt-6 p-4 rounded-lg ${
             message.type === 'success' 

@@ -8,9 +8,9 @@ import Footer from '@/components/layout/Footer';
 
 const categoryInfo = {
   research: {
-    title: 'Research',
-    description: 'Cutting-edge research findings and academic studies from Woxsen University School of Business',
-    longDescription: 'Explore groundbreaking research conducted by our faculty and students. From market analysis to behavioral economics, our research shapes the future of business education.',
+    title: 'Research & Publications',
+    description: 'Cutting-edge research findings, academic studies, journal articles, and scholarly publications from Woxsen University School of Business',
+    longDescription: 'Explore groundbreaking research conducted by our faculty and students. From market analysis to behavioral economics, discover peer-reviewed articles, conference papers, and research publications that shape the future of business education.',
     icon: '🔬',
     color: 'blue'
   },
@@ -21,13 +21,7 @@ const categoryInfo = {
     icon: '🏆',
     color: 'yellow'
   },
-  publications: {
-    title: 'Publications',
-    description: 'Latest publications, journal articles, and academic papers',
-    longDescription: 'Stay updated with the latest scholarly publications from our faculty. Access peer-reviewed articles and research papers published in top-tier journals.',
-    icon: '📚',
-    color: 'green'
-  },
+
   events: {
     title: 'Events',
     description: 'Campus events, conferences, seminars, and academic gatherings',
@@ -67,7 +61,8 @@ const categoryInfo = {
 
 async function getCategoryData(slug, searchParams) {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3001';
+    console.log('Category: Fetching data for', slug, 'from', baseUrl);
     
     // FIX: Await searchParams first, then safely extract string key-value pairs
     const awaitedSearchParams = await searchParams;
@@ -88,10 +83,15 @@ async function getCategoryData(slug, searchParams) {
     });
     
     if (!response.ok) {
+      console.error('Failed to fetch category data:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
       return null;
     }
     
-    return response.json();
+    const data = await response.json();
+    console.log('Category: Received data with', data.blogs?.length || 0, 'blogs');
+    return data;
   } catch (error) {
     console.error('Error fetching category data:', error);
     return null;

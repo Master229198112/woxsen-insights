@@ -5,45 +5,38 @@ import User from '@/models/User';
 
 export async function GET() {
   try {
+    console.log('Homepage API: Starting...');
     await connectDB();
+    console.log('Homepage API: Database connected');
 
-    // Get hero post (most recent hero post or latest published)
-    let heroPost = await Blog.findOne({ 
-      status: 'published', 
-      isHeroPost: true 
-    })
-    .populate('author', 'name department')
-    .sort({ publishedAt: -1 });
-
-    // If no hero post, get the latest published post
-    if (!heroPost) {
-      heroPost = await Blog.findOne({ status: 'published' })
-        .populate('author', 'name department')
-        .sort({ publishedAt: -1 });
-    }
-
-    // Get featured posts (excluding hero post)
+    // Get featured posts
     const featuredPosts = await Blog.find({ 
       status: 'published', 
-      isFeatured: true,
-      _id: { $ne: heroPost?._id }
+      isFeatured: true
     })
-    .populate('author', 'name department')
+    .populate('author', 'name department username')
     .sort({ publishedAt: -1 })
     .limit(6);
 
-    // Get recent posts (excluding hero and featured)
-    const excludeIds = [heroPost?._id, ...featuredPosts.map(p => p._id)].filter(Boolean);
+    // Get recent posts
     const recentPosts = await Blog.find({ 
       status: 'published',
-      _id: { $nin: excludeIds }
+      _id: { $nin: featuredPosts.map(p => p._id) } // Exclude featured posts
     })
-    .populate('author', 'name department')
+    .populate('author', 'name department username')
     .sort({ publishedAt: -1 })
     .limit(8);
 
-    // Get posts by category for category showcase
-    const categories = ['research', 'achievements', 'publications', 'events', 'patents'];
+    // Get posts by category for category showcase - INCLUDE ALL CATEGORIES
+    const categories = [
+      'research', 
+      'achievements', 
+      'events', 
+      'patents',
+      'case-studies',
+      'blogs',
+      'industry-collaborations'
+    ];
     const categoryPosts = {};
     const categoryCounts = {};
 
@@ -53,7 +46,7 @@ export async function GET() {
         status: 'published', 
         category 
       })
-      .populate('author', 'name department')
+      .populate('author', 'name department username')
       .sort({ publishedAt: -1 })
       .limit(4);
 
@@ -78,8 +71,13 @@ export async function GET() {
     ]);
     const totalViews = viewsResult.length > 0 ? viewsResult[0].totalViews : 0;
 
+    console.log('Homepage API: Sending response with', {
+      featuredPostsCount: featuredPosts.length,
+      recentPostsCount: recentPosts.length,
+      totalPublished
+    });
+
     return NextResponse.json({
-      heroPost,
       featuredPosts,
       recentPosts,
       categoryPosts,

@@ -5,9 +5,12 @@ import User from '@/models/User';
 
 export async function GET(request, { params }) {
   try {
+    console.log('Category API: Starting...');
     await connectDB();
+    console.log('Category API: Database connected');
     
     const { slug } = await params;
+    console.log('Category API: Processing slug:', slug);
     const { searchParams } = new URL(request.url);
     
     // Get query parameters
@@ -22,7 +25,6 @@ export async function GET(request, { params }) {
     const validCategories = [
       'research', 
       'achievements', 
-      'publications', 
       'events', 
       'patents',
       'case-studies',
@@ -86,7 +88,7 @@ export async function GET(request, { params }) {
     // Execute query with pagination
     const [blogs, total] = await Promise.all([
       Blog.find(query)
-        .populate('author', 'name department email')
+        .populate('author', 'name department email username')
         .sort(sortCriteria)
         .limit(limit)
         .skip((page - 1) * limit),
@@ -138,9 +140,15 @@ export async function GET(request, { params }) {
       category: slug,
       isFeatured: true
     })
-    .populate('author', 'name department')
+    .populate('author', 'name department username')
     .sort({ publishedAt: -1 })
     .limit(3);
+
+    console.log('Category API: Sending response with', {
+      blogsCount: blogs.length,
+      totalItems: total,
+      featuredPostsCount: featuredPosts.length
+    });
 
     return NextResponse.json({
       blogs,

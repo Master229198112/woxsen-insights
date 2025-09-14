@@ -3,7 +3,6 @@ import { BookOpen, Trophy, Lightbulb, Calendar, Eye, Users, FileText, Search, Pe
 const iconMap = {
   research: BookOpen,
   achievements: Trophy,
-  publications: Lightbulb,
   events: Calendar,
   patents: Lightbulb,
   'case-studies': Search,
@@ -23,7 +22,23 @@ const colorMap = {
 };
 
 export default function CategoryHeader({ info, stats }) {
-  const IconComponent = iconMap[info.title.toLowerCase()] || BookOpen;
+  // Map category slug to icon (more reliable than title)
+  const getIconForCategory = (slug) => {
+    const slugIconMap = {
+      research: BookOpen,
+      achievements: Trophy,
+      events: Calendar,
+      patents: Lightbulb,
+      'case-studies': Search,
+      blogs: PenTool,
+      'industry-collaborations': Handshake,
+    };
+    return slugIconMap[slug] || BookOpen;
+  };
+  
+  const IconComponent = getIconForCategory(info.slug || Object.keys(iconMap).find(key => 
+    info.title.toLowerCase().includes(key)
+  )) || BookOpen;
   const gradientColor = colorMap[info.color] || colorMap.blue;
 
   return (

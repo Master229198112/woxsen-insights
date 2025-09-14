@@ -31,22 +31,16 @@ export default function Navbar() {
 
   const categories = [
     { 
-      name: 'Research', 
+      name: 'Research & Publications', 
       href: '/category/research', 
       icon: BookOpen,
-      description: 'Academic studies and research findings'
+      description: 'Academic studies, research papers, and journal articles'
     },
     { 
       name: 'Achievements', 
       href: '/category/achievements', 
       icon: Trophy,
       description: 'Awards and accomplishments'
-    },
-    { 
-      name: 'Publications', 
-      href: '/category/publications', 
-      icon: Lightbulb,
-      description: 'Journal articles and papers'
     },
     { 
       name: 'Events', 

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import { authOptions } from '@/lib/auth-config';
+import bcrypt from 'bcryptjs';
 
 export async function PUT(request) {
   try {
@@ -19,7 +20,7 @@ export async function PUT(request) {
     
     const { currentPassword, newPassword } = await request.json();
     
-    // Validate input
+    // Validate inputs
     if (!currentPassword || !newPassword) {
       return NextResponse.json(
         { error: 'Current password and new password are required' },
@@ -34,9 +35,8 @@ export async function PUT(request) {
       );
     }
 
-    // Find the user
-    const user = await User.findById(session.user.id);
-    
+    // Get user with password
+    const user = await User.findById(session.user.id).select('+password');
     if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
@@ -46,7 +46,6 @@ export async function PUT(request) {
 
     // Verify current password
     const isCurrentPasswordValid = await user.comparePassword(currentPassword);
-    
     if (!isCurrentPasswordValid) {
       return NextResponse.json(
         { error: 'Current password is incorrect' },
@@ -54,8 +53,12 @@ export async function PUT(request) {
       );
     }
 
-    // Update password (the pre-save middleware will hash it)
-    user.password = newPassword;
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+
+    // Update password
+    user.password = hashedNewPassword;
+    user.activityLog.lastProfileUpdate = new Date();
     await user.save();
 
     return NextResponse.json({
@@ -63,14 +66,7 @@ export async function PUT(request) {
     });
 
   } catch (error) {
-    console.error('Change password error:', error);
-    
-    if (error.name === 'ValidationError') {
-      return NextResponse.json(
-        { error: 'Invalid input data', details: error.message },
-        { status: 400 }
-      );
-    }
+    console.error('Password change error:', error);
     
     return NextResponse.json(
       { error: 'Internal server error' },

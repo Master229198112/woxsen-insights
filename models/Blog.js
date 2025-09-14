@@ -9,12 +9,16 @@ const blogSchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: [true, 'Content is required'],
+    // Content is optional for specialized categories
+    required: false,
+    default: '',
   },
   excerpt: {
     type: String,
-    required: [true, 'Excerpt is required'],
+    // Excerpt is optional for specialized categories  
+    required: false,
     maxlength: [300, 'Excerpt cannot exceed 300 characters'],
+    default: '',
   },
   author: {
     type: mongoose.Schema.Types.ObjectId,
@@ -26,7 +30,6 @@ const blogSchema = new mongoose.Schema({
     enum: [
       'research', 
       'achievements', 
-      'publications', 
       'events', 
       'patents',
       'case-studies',
@@ -130,6 +133,24 @@ const blogSchema = new mongoose.Schema({
     type: String,
     required: true, // Make slug required to prevent null values
     unique: true, // This already creates the index we need
+  },
+  
+  // Category-specific data fields
+  researchData: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null,
+  },
+  patentData: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null,
+  },
+  achievementData: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null,
+  },
+  eventData: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null,
   },
 }, {
   timestamps: true,

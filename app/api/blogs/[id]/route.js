@@ -14,10 +14,10 @@ export async function GET(request, { params }) {
     // Try to find by slug first, then by ID
     if (id.match(/^[0-9a-fA-F]{24}$/)) {
       // It's a MongoDB ObjectId format
-      blog = await Blog.findById(id).populate('author', 'name email department');
+      blog = await Blog.findById(id).populate('author', 'name email department username');
     } else {
       // It's a slug
-      blog = await Blog.findOne({ slug: id }).populate('author', 'name email department');
+      blog = await Blog.findOne({ slug: id }).populate('author', 'name email department username');
     }
     
     if (!blog) {
@@ -39,12 +39,18 @@ export async function GET(request, { params }) {
     await Blog.findByIdAndUpdate(blog._id, { $inc: { views: 1 } });
     blog.views += 1; // Update the current object for response
 
+    console.log('Blog found with category:', blog.category);
+    console.log('Blog has researchData:', !!blog.researchData);
+    console.log('Blog has patentData:', !!blog.patentData);
+    console.log('Blog has achievementData:', !!blog.achievementData);
+    console.log('Blog has eventData:', !!blog.eventData);
+
     // Get approved comments for this blog
     const comments = await Comment.find({
       blog: blog._id,
       isApproved: true
     })
-    .populate('author', 'name email department')
+    .populate('author', 'name email department username')
     .sort({ createdAt: -1 })
     .limit(50);
 
@@ -54,7 +60,7 @@ export async function GET(request, { params }) {
       status: 'published',
       _id: { $ne: blog._id }
     })
-    .populate('author', 'name department')
+    .populate('author', 'name department username')
     .sort({ publishedAt: -1 })
     .limit(4);
 

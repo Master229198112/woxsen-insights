@@ -70,6 +70,16 @@ export async function POST(request) {
     
     console.log(`📧 New newsletter subscription: ${email}`);
 
+    // Send welcome email
+    try {
+      const EmailService = (await import('@/lib/email-service')).default;
+      await EmailService.sendWelcomeEmail(email);
+      console.log(`✅ Welcome email sent to: ${email}`);
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+      // Don't fail the subscription if welcome email fails
+    }
+
     return NextResponse.json({
       message: 'Successfully subscribed! You\'ll receive weekly updates.',
       subscriber: {

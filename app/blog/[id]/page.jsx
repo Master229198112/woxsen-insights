@@ -3,10 +3,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import BlogContent from '@/components/blog/BlogContent';
 import BlogComments from '@/components/blog/BlogComments';
 import BlogSidebar from '@/components/blog/BlogSidebar';
 import ShareButtons from '@/components/blog/ShareButtons';
+import SmartImage from '@/components/ui/SmartImage';
+import AuthorLink from '@/components/ui/AuthorLink';
+import CategoryBasedDisplay from '@/components/blog/displays/CategoryBasedDisplay';
 import { 
   Calendar, 
   User, 
@@ -51,12 +53,12 @@ export async function generateMetadata({ params }) {
   
   return {
     title: `${blog.title} - Woxsen Insights`,
-    description: blog.excerpt,
+    description: blog.excerpt || blog.title,
     keywords: blog.tags?.join(', '),
     authors: [{ name: blog.author.name }],
     openGraph: {
       title: blog.title,
-      description: blog.excerpt,
+      description: blog.excerpt || blog.title,
       images: [blog.featuredImage],
       type: 'article',
       publishedTime: blog.publishedAt,
@@ -66,7 +68,7 @@ export async function generateMetadata({ params }) {
     twitter: {
       card: 'summary_large_image',
       title: blog.title,
-      description: blog.excerpt,
+      description: blog.excerpt || blog.title,
       images: [blog.featuredImage],
     },
     alternates: {
@@ -122,18 +124,18 @@ export default async function BlogDetailPage({ params }) {
                 {blog.title}
               </h1>
 
-              {/* Excerpt */}
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                {blog.excerpt}
-              </p>
+              {/* Excerpt - Only show for categories that have excerpts */}
+              {blog.excerpt && (
+                <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+                  {blog.excerpt}
+                </p>
+              )}
 
               {/* Meta Info */}
               <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500 mb-8">
                 <div className="flex items-center">
                   <User className="h-4 w-4 mr-2" />
-                  <span className="font-medium text-gray-700">{blog.author.name}</span>
-                  <span className="mx-2">•</span>
-                  <span>{blog.author.department}</span>
+                  <AuthorLink author={blog.author} showDepartment={true} className="text-gray-700" />
                 </div>
                 
                 <div className="flex items-center">
@@ -148,18 +150,23 @@ export default async function BlogDetailPage({ params }) {
                 
                 <div className="flex items-center">
                   <Clock className="h-4 w-4 mr-2" />
-                  <span>{Math.ceil(blog.content.split(' ').length / 200)} min read</span>
+                  <span>
+                    {blog.content && blog.content.trim() 
+                      ? `${Math.ceil(blog.content.split(' ').length / 200)} min read`
+                      : 'Quick view'
+                    }
+                  </span>
                 </div>
               </div>
 
               {/* Featured Image */}
-              <div className="relative h-96 rounded-xl overflow-hidden mb-8">
-                <Image
+              <div className="mb-8">
+                <SmartImage
                   src={blog.featuredImage}
                   alt={blog.title}
-                  fill
-                  className="object-cover"
                   priority
+                  naturalSize={true}
+                  className="w-full"
                 />
               </div>
 
@@ -168,15 +175,13 @@ export default async function BlogDetailPage({ params }) {
                 <ShareButtons 
                   url={`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/blog/${blog.slug || blog._id}`}
                   title={blog.title}
-                  description={blog.excerpt}
+                  description={blog.excerpt || blog.title}
                 />
               </div>
             </header>
 
-            {/* Blog Content */}
-            <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
-              <BlogContent content={blog.content} />
-            </div>
+            {/* Category-Based Content Display */}
+            <CategoryBasedDisplay blog={blog} />
 
             {/* Tags */}
             {blog.tags && blog.tags.length > 0 && (
@@ -206,7 +211,7 @@ export default async function BlogDetailPage({ params }) {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    {blog.author.name}
+                    <AuthorLink author={blog.author} className="text-gray-900 hover:text-blue-600" />
                   </h3>
                   <p className="text-gray-600 mb-2">{blog.author.department}</p>
                   <p className="text-sm text-gray-500">

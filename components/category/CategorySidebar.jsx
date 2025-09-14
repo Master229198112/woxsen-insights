@@ -6,7 +6,6 @@ import { BookOpen, Trophy, Lightbulb, Calendar, Tag, User, Search, PenTool, Hand
 const categoryIcons = {
   research: BookOpen,
   achievements: Trophy,
-  publications: Lightbulb,
   events: Calendar,
   patents: Lightbulb,
   'case-studies': Search,
@@ -16,9 +15,8 @@ const categoryIcons = {
 
 export default function CategorySidebar({ data, currentCategory }) {
   const otherCategories = [
-    { slug: 'research', name: 'Research', icon: BookOpen },
+    { slug: 'research', name: 'Research & Publications', icon: BookOpen },
     { slug: 'achievements', name: 'Achievements', icon: Trophy },
-    { slug: 'publications', name: 'Publications', icon: Lightbulb },
     { slug: 'events', name: 'Events', icon: Calendar },
     { slug: 'patents', name: 'Patents', icon: Lightbulb },
     { slug: 'case-studies', name: 'Case Studies', icon: Search },

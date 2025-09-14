@@ -41,10 +41,9 @@ Woxsen Insights is a modern web platform that enables faculty, staff, and admini
 #### Content Management System
 - **Rich Text Editor**: TipTap-powered editor with formatting options
 - **Image Upload System**: Cloudinary integration for media storage
-- **8 Content Categories**:
-  - Research
+- **7 Content Categories**:
+  - Research & Publications
   - Achievements
-  - Publications
   - Events
   - Patents
   - Case Studies
@@ -275,7 +274,7 @@ POST /api/admin/newsletter        # Send newsletters (admin)
 - [x] User authentication and authorization
 - [x] Blog creation and management system
 - [x] Admin dashboard with full functionality
-- [x] 8-category content organization system
+- [x] 7-category content organization system
 - [x] SEO-friendly URL structure with automatic slug generation
 - [x] Image upload and management
 - [x] Newsletter subscription system

@@ -5,6 +5,77 @@ import Blog from '@/models/Blog';
 import { authOptions } from '@/lib/auth-config';
 import { NotificationService } from '@/lib/notifications';
 
+// DELETE method for deleting blogs (admin only)
+export async function DELETE(request, { params }) {
+  try {
+    console.log('🗑️ Delete blog API called');
+    
+    const session = await getServerSession(authOptions);
+    
+    if (!session || session.user.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Unauthorized - Admin access required' },
+        { status: 401 }
+      );
+    }
+
+    await connectDB();
+    
+    const { blogId } = await params;
+    console.log('🗑️ Attempting to delete blog:', blogId);
+
+    // Find the blog first to get details for notification
+    const blog = await Blog.findById(blogId).populate('author', 'name email department');
+    
+    if (!blog) {
+      return NextResponse.json(
+        { error: 'Blog not found' },
+        { status: 404 }
+      );
+    }
+
+    // Store blog details before deletion for notification
+    const blogDetails = {
+      id: blog._id,
+      title: blog.title,
+      author: blog.author,
+      status: blog.status
+    };
+
+    // Delete the blog
+    await Blog.findByIdAndDelete(blogId);
+
+    // Send notification to author about deletion
+    try {
+      await NotificationService.notifyBlogDeleted(
+        blogDetails,
+        session.user.id
+      );
+    } catch (notificationError) {
+      console.error('Notification error:', notificationError);
+      // Don't fail the request if notification fails
+    }
+
+    console.log('✅ Blog deleted successfully:', blogDetails.title);
+
+    return NextResponse.json({
+      message: 'Blog deleted successfully',
+      deletedBlog: {
+        id: blogDetails.id,
+        title: blogDetails.title
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Delete blog error:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete blog', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH method for updating blogs (existing functionality)
 export async function PATCH(request, { params }) {
   try {
     console.log('🔍 Update blog API called');

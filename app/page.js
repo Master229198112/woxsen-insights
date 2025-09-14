@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import SmartImage from '@/components/ui/SmartImage';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -13,23 +14,35 @@ import {
   TrendingUp,
   ArrowRight,
   Eye,
-  User as UserIcon
+  Search,
+  PenTool,
+  Handshake
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 async function getHomepageData() {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3001';
+    console.log('Homepage: Fetching from', `${baseUrl}/api/homepage`);
+    
     const response = await fetch(`${baseUrl}/api/homepage`, {
       cache: 'no-store'
     });
     
     if (!response.ok) {
-      console.error('Failed to fetch homepage data');
+      console.error('Failed to fetch homepage data:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
       return null;
     }
     
-    return response.json();
+    const data = await response.json();
+    console.log('Homepage: Received data with', {
+      featuredPosts: data.featuredPosts?.length || 0,
+      recentPosts: data.recentPosts?.length || 0
+    });
+    
+    return data;
   } catch (error) {
     console.error('Error fetching homepage data:', error);
     return null;
@@ -41,7 +54,6 @@ export default async function HomePage() {
 
   // Fallback data if API fails
   const fallbackData = {
-    heroPost: null,
     featuredPosts: [],
     recentPosts: [],
     categoryPosts: {},
@@ -54,7 +66,6 @@ export default async function HomePage() {
   };
 
   const {
-    heroPost,
     featuredPosts,
     recentPosts,
     stats
@@ -63,11 +74,11 @@ export default async function HomePage() {
   const categories = [
     {
       name: 'research',
-      label: 'Research',
-      description: 'Cutting-edge research findings and academic studies',
+      label: 'Research & Publications',
+      description: 'Cutting-edge research findings, academic studies, and scholarly publications',
       icon: BookOpen,
       color: 'bg-blue-50 text-blue-600',
-      count: stats.categoryCounts?.research || 0
+      count: (stats.categoryCounts?.research || 0) + (stats.categoryCounts?.publications || 0)
     },
     {
       name: 'achievements',
@@ -76,14 +87,6 @@ export default async function HomePage() {
       icon: Trophy,
       color: 'bg-yellow-50 text-yellow-600',
       count: stats.categoryCounts?.achievements || 0
-    },
-    {
-      name: 'publications',
-      label: 'Publications',
-      description: 'Latest publications and academic papers',
-      icon: Lightbulb,
-      color: 'bg-green-50 text-green-600',
-      count: stats.categoryCounts?.publications || 0
     },
     {
       name: 'events',
@@ -101,82 +104,57 @@ export default async function HomePage() {
       color: 'bg-pink-50 text-pink-600',
       count: stats.categoryCounts?.patents || 0
     },
+    {
+      name: 'case-studies',
+      label: 'Case Studies',
+      description: 'Real-world business case studies and practical applications',
+      icon: Search,
+      color: 'bg-indigo-50 text-indigo-600',
+      count: stats.categoryCounts?.['case-studies'] || 0
+    },
+    {
+      name: 'blogs',
+      label: 'Blogs',
+      description: 'General insights, opinions, and thought leadership pieces',
+      icon: PenTool,
+      color: 'bg-emerald-50 text-emerald-600',
+      count: stats.categoryCounts?.blogs || 0
+    },
+    {
+      name: 'industry-collaborations',
+      label: 'Industry Collaborations',
+      description: 'Partnerships, collaborations, and strategic industry connections',
+      icon: Handshake,
+      color: 'bg-cyan-50 text-cyan-600',
+      count: stats.categoryCounts?.['industry-collaborations'] || 0
+    },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       
-      {/* Hero Section */}
-      {heroPost ? (
-        <section className="relative bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <span className="inline-block px-3 py-1 text-sm font-semibold text-blue-600 bg-blue-100 rounded-full mb-4">
-                  {heroPost.category.charAt(0).toUpperCase() + heroPost.category.slice(1)}
-                </span>
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-                  {heroPost.title}
-                </h1>
-                <p className="text-xl text-gray-600 mb-6 leading-relaxed">
-                  {heroPost.excerpt}
-                </p>
-                <div className="flex items-center text-sm text-gray-500 mb-8 space-x-4">
-                  <div className="flex items-center">
-                    <UserIcon className="h-4 w-4 mr-2" />
-                    <span>{heroPost.author.name}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    <span>{formatDate(heroPost.publishedAt)}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Eye className="h-4 w-4 mr-2" />
-                    <span>{heroPost.views} views</span>
-                  </div>
-                </div>
-                <Link href={`/blog/${heroPost.slug || heroPost._id}`}>
-                  <Button size="lg" className="text-lg px-8 py-4">
-                    Read Full Article
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-              </div>
-              <div className="relative h-96 lg:h-[500px]">
-                <Image
-                  src={heroPost.featuredImage}
-                  alt={heroPost.title}
-                  fill
-                  className="object-cover rounded-xl shadow-2xl"
-                  priority
-                />
-              </div>
-            </div>
+      {/* Welcome Section - Replace Hero */}
+      <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold mb-6">
+              Woxsen University
+              <span className="block text-2xl md:text-3xl font-normal mt-2 text-blue-100">
+                School of Business Insights
+              </span>
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 text-blue-100 max-w-3xl mx-auto">
+              Discover the latest research, achievements, and insights from our vibrant academic community.
+            </p>
+            <Link href="/auth/register">
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+                Join Our Community
+              </Button>
+            </Link>
           </div>
-        </section>
-      ) : (
-        <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-            <div className="text-center">
-              <h1 className="text-4xl md:text-6xl font-bold mb-6">
-                Woxsen University
-                <span className="block text-2xl md:text-4xl font-normal mt-2 text-blue-100">
-                  School of Business Insights
-                </span>
-              </h1>
-              <p className="text-xl md:text-2xl mb-8 text-blue-100 max-w-3xl mx-auto">
-                Discover the latest research, achievements, and insights from our vibrant academic community.
-              </p>
-              <Link href="/auth/register">
-                <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
-                  Join Our Community
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* Stats Section */}
       <section className="py-12 bg-white border-b">

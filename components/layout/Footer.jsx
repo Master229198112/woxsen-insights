@@ -10,14 +10,13 @@ export default function Footer() {
   const exploreCategories = [
     // Column 1
     [
-      { name: 'Research', href: '/category/research' },
+      { name: 'Research & Publications', href: '/category/research' },
       { name: 'Achievements', href: '/category/achievements' },
-      { name: 'Publications', href: '/category/publications' },
       { name: 'Events', href: '/category/events' },
+      { name: 'Patents', href: '/category/patents' },
     ],
     // Column 2
     [
-      { name: 'Patents', href: '/category/patents' },
       { name: 'Case Studies', href: '/category/case-studies' },
       { name: 'Blogs', href: '/category/blogs' },
       { name: 'Industry Collaborations', href: '/category/industry-collaborations' },
@@ -119,10 +118,10 @@ export default function Footer() {
               <li className="flex items-start space-x-3">
                 <Mail className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
                 <a 
-                  href="mailto:airesearchcentre@woxsen.edu.in"
+                  href="mailto:sob.insights@woxsen.edu.in"
                   className="text-gray-300 text-sm hover:text-white transition-colors"
                 >
-                  airesearchcentre@woxsen.edu.in
+                  sob.insights@woxsen.edu.in
                 </a>
               </li>
               <li className="flex items-start space-x-3">

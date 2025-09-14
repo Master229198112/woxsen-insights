@@ -18,7 +18,8 @@ import {
   Settings,
   BarChart3,
   Eye,
-  Calendar
+  Calendar,
+  Mail
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -91,11 +92,19 @@ export default function AdminDashboard() {
       urgent: dashboardData.blogs.pending > 0
     },
     {
+      title: 'Newsletter Management',
+      description: 'Manage newsletters and subscribers',
+      icon: Mail,
+      href: '/admin/newsletter',
+      color: 'bg-purple-500',
+      urgent: false
+    },
+    {
       title: 'Analytics',
       description: 'View platform statistics',
       icon: BarChart3,
       href: '/admin/analytics',
-      color: 'bg-purple-500',
+      color: 'bg-indigo-500',
       urgent: false
     },
     {
