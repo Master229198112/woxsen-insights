@@ -653,7 +653,7 @@ const ResearchForm = ({ data, onChange, errors = [] }) => {
             Research Paper PDF
           </CardTitle>
           <p className="text-sm text-gray-600 mt-1">
-            Upload the full research paper PDF or provide a direct link to the paper
+            Upload the full/partial research paper PDF or provide a direct link to the paper
           </p>
         </CardHeader>
         <CardContent>
