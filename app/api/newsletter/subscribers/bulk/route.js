@@ -168,16 +168,18 @@ export async function POST(request) {
             results.updated++;
           }
         } else {
-          // Create new subscriber
+          // Create new subscriber with updated category structure
           const newSubscriber = new NewsletterSubscriber({
             email: normalizedEmail,
             source,
             preferences: {
               weeklyDigest: true,
               achievements: true,
-              publications: true,
+              research: true, // Consolidated Research & Publications
               events: true,
-              research: true,
+              blogs: true,
+              patents: true,
+              industryCollaborations: true,
               ...preferences
             },
             metadata: {

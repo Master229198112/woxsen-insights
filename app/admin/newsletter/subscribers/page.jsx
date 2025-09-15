@@ -3,6 +3,28 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
+import { 
+  Users, 
+  CheckCircle, 
+  TrendingUp, 
+  BarChart3,
+  Upload,
+  Download,
+  Search,
+  Filter,
+  MoreVertical,
+  FileDown,
+  UserX,
+  Mail,
+  Calendar,
+  Eye,
+  Settings,
+  AlertCircle,
+  Loader2,
+  X,
+  FileText,
+  Info
+} from 'lucide-react';
 
 const SubscriberManagement = () => {
   const { data: session, status } = useSession();
@@ -52,6 +74,33 @@ const SubscriberManagement = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Download sample CSV with updated consolidated categories
+  const downloadSampleCSV = () => {
+    const sampleData = [
+      // Header row with all current preference categories
+      ['email', 'weeklyDigest', 'achievements', 'research', 'events', 'blogs', 'patents', 'industryCollaborations'],
+      // Sample data rows showing different preference combinations
+      ['john.doe@example.com', 'true', 'true', 'true', 'true', 'false', 'false', 'true'],
+      ['jane.smith@woxsen.edu.in', 'true', 'false', 'true', 'true', 'true', 'true', 'false'],
+      ['admin@company.com', 'false', 'true', 'true', 'false', 'true', 'true', 'true'],
+      ['researcher@university.edu', 'true', 'true', 'true', 'false', 'false', 'true', 'true']
+    ];
+
+    const csvContent = sampleData
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'newsletter-subscribers-sample.csv';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   };
 
   // Toggle subscriber selection
@@ -120,15 +169,15 @@ const SubscriberManagement = () => {
       setActionLoading('import');
       
       const fileContent = await importFile.text();
-      const lines = fileContent.split('\n');
+      const lines = fileContent.split('\n').filter(line => line.trim());
       
       if (lines.length < 2) {
         alert('CSV file should contain at least a header row and one data row');
         return;
       }
       
-      // Parse CSV (simple implementation)
-      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      // Parse CSV headers
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
       const emailIndex = headers.findIndex(h => h.includes('email'));
       
       if (emailIndex === -1) {
@@ -138,12 +187,23 @@ const SubscriberManagement = () => {
       
       const subscribers = [];
       for (let i = 1; i < lines.length; i++) {
-        const row = lines[i].split(',');
+        const row = lines[i].split(',').map(cell => cell.trim().replace(/"/g, ''));
         if (row[emailIndex] && row[emailIndex].trim()) {
-          subscribers.push({
+          const subscriberData = {
             email: row[emailIndex].trim(),
-            source: 'csv-import'
+            source: 'csv-import',
+            preferences: {}
+          };
+
+          // Map other fields to preferences
+          headers.forEach((header, index) => {
+            if (header !== 'email' && row[index]) {
+              const value = row[index].toLowerCase();
+              subscriberData.preferences[header] = value === 'true' || value === '1' || value === 'yes';
+            }
           });
+
+          subscribers.push(subscriberData);
         }
       }
       
@@ -173,6 +233,8 @@ const SubscriberManagement = () => {
       setActionLoading(null);
     }
   };
+
+  // Export subscribers
   const exportSubscribers = async () => {
     try {
       setActionLoading('export');
@@ -222,6 +284,34 @@ const SubscriberManagement = () => {
     }).format(new Date(date));
   };
 
+  // Get preference display based on consolidated categories
+  const getPreferenceDisplay = (preferences) => {
+    const categories = [
+      { key: 'weeklyDigest', label: 'Weekly', color: 'bg-blue-100 text-blue-800' },
+      { key: 'achievements', label: 'Achievements', color: 'bg-yellow-100 text-yellow-800' },
+      { key: 'research', label: 'Research & Publications', color: 'bg-green-100 text-green-800' }, // Updated label
+      { key: 'events', label: 'Events', color: 'bg-purple-100 text-purple-800' },
+      { key: 'blogs', label: 'Blogs', color: 'bg-indigo-100 text-indigo-800' },
+      { key: 'patents', label: 'Patents', color: 'bg-pink-100 text-pink-800' },
+      { key: 'industryCollaborations', label: 'Industry Collaborations', color: 'bg-cyan-100 text-cyan-800' }
+    ];
+
+    const activePrefs = [];
+    
+    categories.forEach(cat => {
+      if (cat.key === 'research') {
+        // Handle consolidated research & publications
+        if (preferences?.research || preferences?.publications) {
+          activePrefs.push(cat);
+        }
+      } else if (preferences?.[cat.key]) {
+        activePrefs.push(cat);
+      }
+    });
+
+    return activePrefs;
+  };
+
   // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -242,93 +332,111 @@ const SubscriberManagement = () => {
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading newsletter management...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="space-y-6"> {/* Reduced from space-y-8 for better spacing */}
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Newsletter Subscribers</h1>
-        <p className="text-gray-600">Manage your newsletter subscriber list</p>
+      <div className="border-b border-gray-200 pb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <Mail className="h-8 w-8 text-blue-600" />
+              Newsletter Subscribers
+            </h1>
+            <p className="text-gray-600 mt-2">Manage your newsletter subscriber list and preferences</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={downloadSampleCSV}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <FileDown className="h-4 w-4 mr-2" />
+              Sample CSV
+            </button>
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Import CSV
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4"> {/* Reduced gap from gap-6 */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> {/* Reduced padding from p-6 to p-5 */}
           <div className="flex items-center">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-600">Total Subscribers</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total || 0}</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.total || 0}</p>
             </div>
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-blue-600 text-sm">👥</span>
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Users className="h-6 w-6 text-blue-600" />
             </div>
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> {/* Reduced padding from p-6 to p-5 */}
           <div className="flex items-center">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-600">Active</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.active || 0}</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.active || 0}</p>
             </div>
-            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-              <span className="text-green-600 text-sm">✅</span>
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> {/* Reduced padding */}
           <div className="flex items-center">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-600">This Week</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.thisWeek || 0}</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.thisWeek || 0}</p>
             </div>
-            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-              <span className="text-purple-600 text-sm">📈</span>
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-purple-600" />
             </div>
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> {/* Reduced padding */}
           <div className="flex items-center">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-600">Growth Rate</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-3xl font-bold text-gray-900">
                 {stats.total > 0 ? ((stats.thisWeek / stats.total) * 100).toFixed(1) : 0}%
               </p>
             </div>
-            <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-              <span className="text-yellow-600 text-sm">📊</span>
+            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <BarChart3 className="h-6 w-6 text-yellow-600" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      {/* Actions Bar */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4"> {/* Reduced padding from p-6 to p-4 */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => setShowImportModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-            >
-              <span>📎</span>
-              Import CSV
-            </button>
-            
             <button
               onClick={exportSubscribers}
               disabled={actionLoading === 'export'}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
             >
               {actionLoading === 'export' ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <span>📥</span>
+                <Download className="h-4 w-4 mr-2" />
               )}
               Export CSV
             </button>
@@ -337,12 +445,12 @@ const SubscriberManagement = () => {
               <button
                 onClick={bulkUnsubscribe}
                 disabled={actionLoading === 'bulk-unsubscribe'}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'bulk-unsubscribe' ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
-                  <span>🚫</span>
+                  <UserX className="h-4 w-4 mr-2" />
                 )}
                 Unsubscribe Selected ({selectedSubscribers.length})
               </button>
@@ -356,46 +464,56 @@ const SubscriberManagement = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <input
-            type="text"
-            placeholder="Search by email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4"> {/* Reduced padding from p-6 to p-4 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
           
-          <select
-            value={filter.status}
-            onChange={(e) => setFilter({ ...filter, status: e.target.value })}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <select
+              value={filter.status}
+              onChange={(e) => setFilter({ ...filter, status: e.target.value })}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
           
-          <select
-            value={filter.source}
-            onChange={(e) => setFilter({ ...filter, source: e.target.value })}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Sources</option>
-            <option value="blog-sidebar">Blog Sidebar</option>
-            <option value="footer">Footer</option>
-            <option value="homepage">Homepage</option>
-            <option value="manual">Manual</option>
-          </select>
+          <div className="relative">
+            <Settings className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <select
+              value={filter.source}
+              onChange={(e) => setFilter({ ...filter, source: e.target.value })}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+            >
+              <option value="all">All Sources</option>
+              <option value="blog-sidebar">Blog Sidebar</option>
+              <option value="footer">Footer</option>
+              <option value="homepage">Homepage</option>
+              <option value="manual">Manual</option>
+              <option value="csv-import">CSV Import</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Subscriber List */}
-      <div className="bg-white rounded-lg shadow-md">
-        <div className="px-6 py-4 border-b border-gray-200">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div className="px-5 py-4 border-b border-gray-200"> {/* Reduced padding from px-6 to px-5 */}
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">Subscribers</h2>
-            <label className="flex items-center gap-2">
+            <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={selectedSubscribers.length === subscribers.length && subscribers.length > 0}
@@ -408,20 +526,22 @@ const SubscriberManagement = () => {
         </div>
         
         {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading subscribers...</p>
+          <div className="p-12 text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600">Loading subscribers...</p>
           </div>
         ) : subscribers.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <p>No subscribers found</p>
+          <div className="p-12 text-center">
+            <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No subscribers found</h3>
+            <p className="text-gray-500">Try adjusting your search criteria or import new subscribers.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"> {/* Reduced padding */}
                     <input
                       type="checkbox"
                       checked={selectedSubscribers.length === subscribers.length}
@@ -429,17 +549,17 @@ const SubscriberManagement = () => {
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscribed</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preferences</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th> {/* Reduced padding */}
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th> {/* Reduced padding */}
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th> {/* Reduced padding */}
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscribed</th> {/* Reduced padding */}
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preferences</th> {/* Reduced padding */}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {subscribers.map((subscriber) => (
-                  <tr key={subscriber._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
+                  <tr key={subscriber._id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-5 py-4"> {/* Reduced padding */}
                       <input
                         type="checkbox"
                         checked={selectedSubscribers.includes(subscriber._id)}
@@ -447,14 +567,18 @@ const SubscriberManagement = () => {
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{subscriber.email}</div>
-                      {subscriber.metadata?.ipAddress && (
-                        <div className="text-sm text-gray-500">IP: {subscriber.metadata.ipAddress}</div>
-                      )}
+                    <td className="px-5 py-4"> {/* Reduced padding */}
+                      <div className="flex items-center">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{subscriber.email}</div>
+                          {subscriber.metadata?.ipAddress && (
+                            <div className="text-sm text-gray-500">IP: {subscriber.metadata.ipAddress}</div>
+                          )}
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    <td className="px-5 py-4"> {/* Reduced padding */}
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                         subscriber.isActive 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-red-100 text-red-800'
@@ -462,34 +586,27 @@ const SubscriberManagement = () => {
                         {subscriber.isActive ? 'ACTIVE' : 'INACTIVE'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-4"> {/* Reduced padding */}
                       <span className="text-sm text-gray-900 capitalize">
                         {subscriber.source?.replace('-', ' ') || 'Unknown'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-4"> {/* Reduced padding */}
                       <div className="text-sm text-gray-900">{formatDate(subscriber.subscribedAt)}</div>
                       {subscriber.unsubscribedAt && (
                         <div className="text-sm text-red-600">Unsubscribed: {formatDate(subscriber.unsubscribedAt)}</div>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-4"> {/* Reduced padding */}
                       <div className="flex flex-wrap gap-1">
-                        {subscriber.preferences?.weeklyDigest && (
-                          <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">Weekly</span>
-                        )}
-                        {subscriber.preferences?.achievements && (
-                          <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">Achievements</span>
-                        )}
-                        {subscriber.preferences?.publications && (
-                          <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">Publications</span>
-                        )}
-                        {subscriber.preferences?.events && (
-                          <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">Events</span>
-                        )}
-                        {subscriber.preferences?.research && (
-                          <span className="px-2 py-1 text-xs bg-pink-100 text-pink-800 rounded">Research</span>
-                        )}
+                        {getPreferenceDisplay(subscriber.preferences).map((pref, index) => (
+                          <span 
+                            key={index}
+                            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${pref.color}`}
+                          >
+                            {pref.label}
+                          </span>
+                        ))}
                       </div>
                     </td>
                   </tr>
@@ -501,7 +618,7 @@ const SubscriberManagement = () => {
         
         {/* Pagination */}
         {pagination.pages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+          <div className="px-5 py-4 border-t border-gray-200 flex items-center justify-between"> {/* Reduced padding from px-6 to px-5 */}
             <div className="text-sm text-gray-700">
               Showing page {pagination.current} of {pagination.pages} ({pagination.total} total)
             </div>
@@ -509,14 +626,14 @@ const SubscriberManagement = () => {
               <button
                 onClick={() => fetchSubscribers(pagination.current - 1)}
                 disabled={pagination.current <= 1}
-                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Previous
               </button>
               <button
                 onClick={() => fetchSubscribers(pagination.current + 1)}
                 disabled={pagination.current >= pagination.pages}
-                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Next
               </button>
@@ -528,27 +645,30 @@ const SubscriberManagement = () => {
       {/* Import Modal */}
       {showImportModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Import Subscribers</h2>
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <Upload className="h-5 w-5" />
+                  Import Subscribers
+                </h2>
                 <button
                   onClick={() => {
                     setShowImportModal(false);
                     setImportFile(null);
                     setImportResults(null);
                   }}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  ✕
+                  <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
             
             <div className="p-6">
               {!importResults ? (
-                <div>
-                  <div className="mb-4">
+                <div className="space-y-6">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Select CSV File
                     </label>
@@ -560,14 +680,37 @@ const SubscriberManagement = () => {
                     />
                   </div>
                   
-                  <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-medium text-blue-800 mb-2">CSV Format Requirements:</h4>
-                    <ul className="text-sm text-blue-700 space-y-1">
-                      <li>• First row should contain headers</li>
-                      <li>• Must include an "email" column</li>
-                      <li>• One email per row</li>
-                      <li>• Example: email,name</li>
-                    </ul>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium text-blue-800 mb-2">CSV Format Requirements:</h4>
+                        <ul className="text-sm text-blue-700 space-y-1">
+                          <li>• First row should contain column headers</li>
+                          <li>• Required: <code className="bg-blue-100 px-1 rounded">email</code> column</li>
+                          <li>• Optional preference columns: <code className="bg-blue-100 px-1 rounded">weeklyDigest</code>, <code className="bg-blue-100 px-1 rounded">achievements</code>, <code className="bg-blue-100 px-1 rounded">research</code>, <code className="bg-blue-100 px-1 rounded">events</code>, <code className="bg-blue-100 px-1 rounded">blogs</code>, <code className="bg-blue-100 px-1 rounded">patents</code>, <code className="bg-blue-100 px-1 rounded">industryCollaborations</code></li>
+                          <li>• Use <code className="bg-blue-100 px-1 rounded">true</code>/<code className="bg-blue-100 px-1 rounded">false</code>, <code className="bg-blue-100 px-1 rounded">1</code>/<code className="bg-blue-100 px-1 rounded">0</code>, or <code className="bg-blue-100 px-1 rounded">yes</code>/<code className="bg-blue-100 px-1 rounded">no</code> for preference values</li>
+                          <li>• <strong>Note:</strong> The <code className="bg-blue-100 px-1 rounded">research</code> column covers both Research & Publications content</li>
+                          <li>• Missing preference columns will default to <code className="bg-blue-100 px-1 rounded">true</code> for new subscribers</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-gray-800">Need a template?</h4>
+                      <button
+                        onClick={downloadSampleCSV}
+                        className="inline-flex items-center px-3 py-1 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                      >
+                        <FileText className="h-4 w-4 mr-1" />
+                        Download Sample CSV
+                      </button>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      Download our sample CSV file to see the correct format and required columns.
+                    </p>
                   </div>
                   
                   <div className="flex justify-end space-x-3">
@@ -576,64 +719,75 @@ const SubscriberManagement = () => {
                         setShowImportModal(false);
                         setImportFile(null);
                       }}
-                      className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+                      className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={importSubscribers}
                       disabled={!importFile || actionLoading === 'import'}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
                     >
                       {actionLoading === 'import' ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <span>📤</span>
+                        <Upload className="h-4 w-4" />
                       )}
                       Import Subscribers
                     </button>
                   </div>
                 </div>
               ) : (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Import Results</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                      <span className="text-green-800">Successfully Added</span>
-                      <span className="font-bold text-green-600">{importResults.added}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                      <span className="text-blue-800">Updated</span>
-                      <span className="font-bold text-blue-600">{importResults.updated}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                      <span className="text-yellow-800">Skipped</span>
-                      <span className="font-bold text-yellow-600">{importResults.skipped}</span>
-                    </div>
-                    
-                    {importResults.errors && importResults.errors.length > 0 && (
-                      <div className="p-3 bg-red-50 rounded-lg">
-                        <h4 className="font-medium text-red-800 mb-2">Errors:</h4>
-                        <ul className="text-sm text-red-700 space-y-1">
-                          {importResults.errors.slice(0, 5).map((error, index) => (
-                            <li key={index}>• {error}</li>
-                          ))}
-                          {importResults.errors.length > 5 && (
-                            <li>• ... and {importResults.errors.length - 5} more errors</li>
-                          )}
-                        </ul>
+                <div className="space-y-6">
+                  <h3 className="text-lg font-medium text-gray-900">Import Results</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-600">{importResults.added}</div>
+                        <div className="text-sm text-green-800">Successfully Added</div>
                       </div>
-                    )}
+                    </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">{importResults.updated}</div>
+                        <div className="text-sm text-blue-800">Updated</div>
+                      </div>
+                    </div>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-yellow-600">{importResults.skipped}</div>
+                        <div className="text-sm text-yellow-800">Skipped</div>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="flex justify-end mt-6">
+                  {importResults.errors && importResults.errors.length > 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <h4 className="font-medium text-red-800 mb-2">Errors occurred during import:</h4>
+                          <ul className="text-sm text-red-700 space-y-1 max-h-32 overflow-y-auto">
+                            {importResults.errors.slice(0, 10).map((error, index) => (
+                              <li key={index}>• {error}</li>
+                            ))}
+                            {importResults.errors.length > 10 && (
+                              <li>• ... and {importResults.errors.length - 10} more errors</li>
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-end">
                     <button
                       onClick={() => {
                         setShowImportModal(false);
                         setImportFile(null);
                         setImportResults(null);
                       }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Close
                     </button>

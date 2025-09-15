@@ -258,14 +258,37 @@ const DynamicPostForm = () => {
     }));
   };
 
+  // Enhanced tag handling - supports both comma-separated and individual entry
   const addTag = () => {
-    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, tagInput.trim()]
-      }));
-      setTagInput('');
+    if (!tagInput.trim()) return;
+    
+    // Check if input contains commas or semicolons for bulk processing
+    const separators = /[,;]/;
+    if (separators.test(tagInput)) {
+      // Process comma/semicolon-separated tags
+      const newTags = tagInput
+        .split(separators)
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0 && !formData.tags.includes(tag));
+      
+      if (newTags.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          tags: [...prev.tags, ...newTags]
+        }));
+      }
+    } else {
+      // Process single tag
+      const trimmedTag = tagInput.trim();
+      if (trimmedTag && !formData.tags.includes(trimmedTag)) {
+        setFormData(prev => ({
+          ...prev,
+          tags: [...prev.tags, trimmedTag]
+        }));
+      }
     }
+    
+    setTagInput('');
   };
 
   const removeTag = (tagToRemove) => {
@@ -279,6 +302,46 @@ const DynamicPostForm = () => {
     if (e.key === 'Enter') {
       e.preventDefault();
       addTag();
+    } else if (e.key === ',' || e.key === ';') {
+      // Auto-add tag when comma or semicolon is pressed
+      e.preventDefault();
+      const currentValue = tagInput.trim();
+      if (currentValue) {
+        // Add the current tag before the separator
+        if (!formData.tags.includes(currentValue)) {
+          setFormData(prev => ({
+            ...prev,
+            tags: [...prev.tags, currentValue]
+          }));
+        }
+        setTagInput('');
+      }
+    }
+  };
+
+  // Handle paste events for comma-separated tags
+  const handleTagPaste = (e) => {
+    const pastedText = e.clipboardData.getData('text');
+    const separators = /[,;]/;
+    
+    if (separators.test(pastedText)) {
+      e.preventDefault();
+      
+      // Combine current input with pasted text
+      const fullText = tagInput + pastedText;
+      const newTags = fullText
+        .split(separators)
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0 && !formData.tags.includes(tag));
+      
+      if (newTags.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          tags: [...prev.tags, ...newTags]
+        }));
+      }
+      
+      setTagInput('');
     }
   };
 
@@ -540,6 +603,13 @@ const DynamicPostForm = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Tags</CardTitle>
+                <p className="text-sm text-gray-600 mt-1">
+                  Add relevant tags to help categorize your content. You can:
+                  <br />
+                  • Type a tag and press <kbd className="px-1 py-0.5 text-xs bg-gray-100 border rounded">Enter</kbd> to add it
+                  • Enter multiple tags separated by commas: <code className="text-xs bg-gray-100 px-1 rounded">tag1, tag2, tag3</code>
+                  • Use semicolons as separators: <code className="text-xs bg-gray-100 px-1 rounded">tag1; tag2; tag3</code>
+                </p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -548,7 +618,8 @@ const DynamicPostForm = () => {
                       value={tagInput}
                       onChange={(e) => setTagInput(e.target.value)}
                       onKeyPress={handleTagKeyPress}
-                      placeholder="Add tags (press Enter to add)"
+                      onPaste={handleTagPaste}
+                      placeholder="Add tags (Enter, comma, or semicolon to separate)"
                       className="flex-1"
                     />
                     <Button type="button" onClick={addTag} variant="outline">
@@ -557,24 +628,38 @@ const DynamicPostForm = () => {
                   </div>
                   
                   {formData.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {formData.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
-                        >
-                          {tag}
-                          <button
-                            type="button"
-                            onClick={() => removeTag(tag)}
-                            className="ml-2 text-blue-600 hover:text-blue-800"
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-600">{formData.tags.length} tag{formData.tags.length !== 1 ? 's' : ''} added:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 transition-all hover:bg-blue-200"
                           >
-                            ×
-                          </button>
-                        </span>
-                      ))}
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => removeTag(tag)}
+                              className="ml-2 text-blue-600 hover:text-blue-800 font-medium"
+                              title="Remove tag"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
+                  
+                  {/* Examples */}
+                  <div className="bg-gray-50 p-3 rounded-md">
+                    <p className="text-xs text-gray-600 mb-2 font-medium">Examples:</p>
+                    <div className="space-y-1 text-xs text-gray-500">
+                      <div>Single tag: <code className="bg-white px-1 rounded">machine learning</code> + Enter</div>
+                      <div>Multiple tags: <code className="bg-white px-1 rounded">AI, data science, research, innovation</code></div>
+                      <div>With semicolons: <code className="bg-white px-1 rounded">blockchain; cryptocurrency; fintech</code></div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

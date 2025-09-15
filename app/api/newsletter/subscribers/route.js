@@ -41,7 +41,7 @@ export async function GET(request) {
         .sort({ subscribedAt: -1 })
         .select('email isActive subscribedAt unsubscribedAt source preferences metadata');
 
-      // Generate CSV
+      // Generate CSV with updated category names
       const csvHeaders = [
         'Email',
         'Status', 
@@ -50,9 +50,11 @@ export async function GET(request) {
         'Unsubscribed Date',
         'Weekly Digest',
         'Achievements',
-        'Publications', 
+        'Research & Publications', // Updated from separate Research/Publications
         'Events',
-        'Research',
+        'Blogs',
+        'Patents',
+        'Industry Collaborations',
         'IP Address',
         'User Agent',
         'Referrer'
@@ -66,9 +68,12 @@ export async function GET(request) {
         subscriber.unsubscribedAt ? subscriber.unsubscribedAt.toISOString() : '',
         subscriber.preferences?.weeklyDigest ? 'Yes' : 'No',
         subscriber.preferences?.achievements ? 'Yes' : 'No',
-        subscriber.preferences?.publications ? 'Yes' : 'No',
+        // Handle consolidated Research & Publications (check both research and publications)
+        (subscriber.preferences?.research || subscriber.preferences?.publications) ? 'Yes' : 'No',
         subscriber.preferences?.events ? 'Yes' : 'No',
-        subscriber.preferences?.research ? 'Yes' : 'No',
+        subscriber.preferences?.blogs ? 'Yes' : 'No',
+        subscriber.preferences?.patents ? 'Yes' : 'No',
+        subscriber.preferences?.industryCollaborations ? 'Yes' : 'No',
         subscriber.metadata?.ipAddress || '',
         subscriber.metadata?.userAgent || '',
         subscriber.metadata?.referrer || ''
@@ -173,16 +178,18 @@ export async function POST(request) {
       }
     }
 
-    // Create new subscriber
+    // Create new subscriber with updated preferences
     const newSubscriber = new NewsletterSubscriber({
       email: email.toLowerCase(),
       source: 'manual',
       preferences: {
         weeklyDigest: true,
         achievements: true,
-        publications: true,
+        research: true, // Consolidated research & publications
         events: true,
-        research: true,
+        blogs: true,
+        patents: true,
+        industryCollaborations: true,
         ...preferences
       },
       metadata: {

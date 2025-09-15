@@ -205,8 +205,10 @@ export default function NewsletterLayout({ children }) {
           </div>
 
           {/* Page content with proper spacing */}
-          <main className="flex-1" style={{ marginTop: '64px' }}>
-            {children}
+          <main className="flex-1 p-6 lg:p-8" style={{ marginTop: '64px' }}> {/* Added padding for proper spacing */}
+            <div className="max-w-7xl mx-auto"> {/* Added container for better layout */}
+              {children}
+            </div>
           </main>
           
           {/* Footer */}
