@@ -74,6 +74,7 @@ const DynamicPostForm = () => {
     tags: [],
     featuredImage: '',
     slug: '', // Add slug to form data
+    imageAnalysis: null, // Add image analysis data
     // Category-specific data will be added here
     researchData: null,
     patentData: null,
@@ -249,8 +250,12 @@ const DynamicPostForm = () => {
     }
   };
 
-  const handleImageUpload = (imageUrl,imageAnalysis) => {
-    setFormData(prev => ({ ...prev, featuredImage: imageUrl, imageAnalysis: imageAnalysis }));
+  const handleImageUpload = (imageUrl, imageAnalysis = null) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      featuredImage: imageUrl, 
+      imageAnalysis: imageAnalysis 
+    }));
     if (errors.featuredImage) {
       setErrors(prev => ({ ...prev, featuredImage: null }));
     }

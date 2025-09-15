@@ -4,12 +4,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Upload, X, Image as ImageIcon, Link as LinkIcon, Globe, AlertTriangle, CheckCircle, Eye, Zap } from 'lucide-react';
 import Image from 'next/image';
+import { useAIImageDetector, AIImageDetectionResults } from './AiImageDetector';
 
 const ImageUpload = ({ onImageUploaded, currentImage }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [uploadMethod, setUploadMethod] = useState('upload'); // 'upload' or 'url'
   const [imageUrl, setImageUrl] = useState('');
+  
+  // AI Detection Hook
+  const { analysis, analyze } = useAIImageDetector();
+  
+  // Quality Analysis States
+  const [analyzingQuality, setAnalyzingQuality] = useState(false);
+  const [qualityAnalysis, setQualityAnalysis] = useState(null);
+  const [showQualityWarning, setShowQualityWarning] = useState(false);
+  const [pendingFile, setPendingFile] = useState(null);
 
   // Trusted domains for external images
   const trustedDomains = [
@@ -30,6 +40,97 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
     'blob.core.windows.net'
   ];
 
+  // Quality analyzer functions
+  const qualityAnalyzer = {
+    analyzeImageQuality: async (file) => {
+      return new Promise((resolve) => {
+        const img = new window.Image();
+        img.onload = () => {
+          const width = img.width;
+          const height = img.height;
+          const fileSize = file.size;
+          
+          console.log('Quality Analysis:', { width, height, fileSize, fileName: file.name });
+          
+          // More strict quality scoring
+          const resolutionScore = width >= 1200 && height >= 800 ? 90 : 
+                                width >= 800 && height >= 600 ? 70 : 
+                                width >= 600 && height >= 400 ? 50 : 
+                                width >= 400 && height >= 300 ? 30 : 10;
+          
+          const sizeScore = fileSize > 2 * 1024 * 1024 ? 90 : 
+                           fileSize > 1 * 1024 * 1024 ? 70 : 
+                           fileSize > 500 * 1024 ? 50 : 
+                           fileSize > 200 * 1024 ? 30 : 10;
+          
+          const overallScore = (resolutionScore + sizeScore) / 2;
+          
+          let overall = 'excellent';
+          if (overallScore < 30) overall = 'very poor';
+          else if (overallScore < 50) overall = 'poor';
+          else if (overallScore < 70) overall = 'fair';
+          else if (overallScore < 85) overall = 'good';
+          
+          console.log('Quality Scores:', { resolutionScore, sizeScore, overallScore, overall });
+          
+          const recommendations = [];
+          if (width < 800 || height < 600) {
+            recommendations.push('Consider using an image with at least 800x600 resolution for better quality');
+          }
+          if (width < 400 || height < 300) {
+            recommendations.push('Image resolution is very low and may appear pixelated');
+          }
+          if (fileSize < 200 * 1024) {
+            recommendations.push('Image file size is very small, which may indicate heavy compression');
+          }
+          if (fileSize < 100 * 1024) {
+            recommendations.push('File size is extremely small - image quality may be severely compromised');
+          }
+          if (overallScore < 50) {
+            recommendations.push('This image may not display well on larger screens or in print');
+          }
+          if (recommendations.length === 0) {
+            recommendations.push('Image quality looks good for web use');
+          }
+          
+          const analysis = {
+            width,
+            height,
+            fileSize,
+            overall,
+            score: overallScore,
+            resolution: {
+              score: resolutionScore,
+              quality: resolutionScore >= 70 ? 'good' : resolutionScore >= 50 ? 'fair' : 'poor'
+            },
+            blur: {
+              isBlurry: false, // Simplified - can be enhanced later
+              quality: 'sharp'
+            },
+            recommendations
+          };
+          
+          console.log('Final Analysis:', analysis);
+          resolve(analysis);
+        };
+        img.onerror = () => {
+          resolve({
+            overall: 'unknown',
+            score: 0,
+            recommendations: ['Could not analyze image quality'],
+            error: true
+          });
+        };
+        img.src = URL.createObjectURL(file);
+      });
+    },
+    
+    meetsMinimumQuality: (analysis) => {
+      const meets = analysis.score >= 60; // Raised threshold to 60
+      console.log('Quality Check:', { score: analysis.score, meets, threshold: 60 });
+      return meets;
+    }
+  };
 
   const validateImageUrl = (url) => {
     try {
@@ -92,11 +193,11 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
       setPendingFile(file);
       
       try {
-        const analysis = await qualityAnalyzer.analyzeImageQuality(file);
-        setQualityAnalysis(analysis);
+        const qualityResult = await qualityAnalyzer.analyzeImageQuality(file);
+        setQualityAnalysis(qualityResult);
         
         // Check if image meets minimum quality standards
-        if (!qualityAnalyzer.meetsMinimumQuality(analysis)) {
+        if (!qualityAnalyzer.meetsMinimumQuality(qualityResult)) {
           setShowQualityWarning(true);
           setAnalyzingQuality(false);
           return; // Don't upload yet, show warning
@@ -134,7 +235,13 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
         throw new Error(data.error || 'Upload failed');
       }
 
-      onImageUploaded(data.url);
+      // Pass both URL and analysis result
+      onImageUploaded(data.url, analysisResult);
+      
+      // Clear pending states
+      setPendingFile(null);
+      setQualityAnalysis(null);
+
     } catch (error) {
       setUploadError(error.message);
       console.error('Upload error:', error);
@@ -144,7 +251,6 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
   };
 
   const handleUrlSubmit = async () => {
-    
     if (!imageUrl.trim()) {
       setUploadError('Please enter an image URL');
       return;
@@ -163,12 +269,20 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
       // Test if the image loads and run analysis
       const img = new window.Image();
       img.onload = async () => {
-        // simulate file object for detector
-        const fakeFile = new File([], imageUrl.trim(), { type: 'image/jpeg' });
-        const analysisResult = await analyze(fakeFile);
-        onImageUploaded(imageUrl.trim(), analysisResult);
-        setImageUrl('');
-        setUploading(false);
+        try {
+          // Create a fake file object for AI analysis
+          const fakeFile = new File([], imageUrl.trim(), { type: 'image/jpeg' });
+          const analysisResult = await analyze(fakeFile);
+          onImageUploaded(imageUrl.trim(), analysisResult);
+          setImageUrl('');
+          setUploading(false);
+        } catch (error) {
+          console.error('Analysis error:', error);
+          // Still upload without analysis if it fails
+          onImageUploaded(imageUrl.trim(), null);
+          setImageUrl('');
+          setUploading(false);
+        }
       };
 
       img.onerror = () => {
@@ -180,7 +294,6 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
       setUploadError('Error validating image URL');
       setUploading(false);
     }
-    
   };
 
   const handleDrop = (e) => {
@@ -223,7 +336,6 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
       case 'fair':
         return <Eye className="h-5 w-5 text-yellow-600" />;
       case 'poor':
-      case 'very poor':
         return <AlertTriangle className="h-5 w-5 text-red-600" />;
       default:
         return <Zap className="h-5 w-5 text-gray-600" />;
@@ -238,20 +350,17 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
       case 'fair':
         return 'bg-yellow-50 border-yellow-200 text-yellow-800';
       case 'poor':
-      case 'very poor':
         return 'bg-red-50 border-red-200 text-red-800';
       default:
         return 'bg-gray-50 border-gray-200 text-gray-800';
     }
   };
 
-  useEffect(()=>{
-
-    if(analysis){
-      console.log("Full analysis : ",analysis)
+  useEffect(() => {
+    if (analysis) {
+      console.log("Full AI analysis:", analysis);
     }
-
-  },[analysis])
+  }, [analysis]);
 
   return (
     <div className="space-y-4">
@@ -317,19 +426,17 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
                   <div>
                     <span className="font-medium">Resolution:</span> {qualityAnalysis.width}×{qualityAnalysis.height}
                     <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                      qualityAnalysis.resolution.score >= 60 ? 'bg-green-100 text-green-800' : 
-                      qualityAnalysis.resolution.score >= 40 ? 'bg-yellow-100 text-yellow-800' : 
+                      qualityAnalysis.resolution.score >= 70 ? 'bg-green-100 text-green-800' : 
+                      qualityAnalysis.resolution.score >= 50 ? 'bg-yellow-100 text-yellow-800' : 
                       'bg-red-100 text-red-800'
                     }`}>
                       {qualityAnalysis.resolution.quality}
                     </span>
                   </div>
                   <div>
-                    <span className="font-medium">Sharpness:</span> 
-                    <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                      !qualityAnalysis.blur.isBlurry ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {qualityAnalysis.blur.quality}
+                    <span className="font-medium">File Size:</span> 
+                    <span className="ml-2">
+                      {(qualityAnalysis.fileSize / 1024 / 1024).toFixed(2)} MB
                     </span>
                   </div>
                 </div>
@@ -381,7 +488,7 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
             </div>
             <div>
               <p className="text-lg font-medium text-gray-900">Analyzing Image Quality...</p>
-              <p className="text-sm text-gray-600">Checking resolution, sharpness, and compression</p>
+              <p className="text-sm text-gray-600">Checking resolution, size, and overall quality</p>
             </div>
           </div>
         </div>
@@ -485,10 +592,10 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
         </div>
       )}
 
-      {currentImage && (
-  <AIImageDetectionResults analysis={analysis} />
-)}
-
+      {/* AI Detection Results */}
+      {currentImage && analysis && (
+        <AIImageDetectionResults analysis={analysis} />
+      )}
 
       {uploadError && (
         <div className="bg-red-50 border border-red-200 rounded-md p-3">
@@ -501,7 +608,8 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
         <p className="text-blue-800 text-sm font-medium mb-2">Image Quality & Sources:</p>
         <div className="text-blue-700 text-xs space-y-1">
           <p><strong>Upload:</strong> JPG, PNG, WEBP (max 5MB)</p>
-          <p><strong>Quality Check:</strong> Automatic analysis for blur, resolution, and compression</p>
+          <p><strong>Quality Check:</strong> Automatic analysis for resolution, size, and compression</p>
+          <p><strong>AI Detection:</strong> Automatic detection of AI-generated content</p>
           <p><strong>External URLs from:</strong> Imgur, Pexels, GitHub, University domains</p>
           <p><strong>Minimum recommended:</strong> 800×600px, sharp focus, minimal compression</p>
         </div>
