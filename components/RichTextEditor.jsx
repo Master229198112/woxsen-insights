@@ -1,5 +1,5 @@
 // ========================================
-// 📁 components/RichTextEditor.jsx (Enhanced with Inline Image Upload)
+// 📁 components/RichTextEditor.jsx (Enhanced with Inline Image Upload + AI Detection)
 // ========================================
 'use client';
 
@@ -24,11 +24,16 @@ import {
   Upload,
   X,
   Globe,
-  ExternalLink
+  ExternalLink,
+  AlertTriangle,
+  CheckCircle,
+  Eye,
+  Zap
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import NextImage from 'next/image';
 import { ImageQualityAnalyzer } from '@/lib/imageQuality';
+import { useAIImageDetector, AIImageDetectionResults } from './AiImageDetector';
 
 const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." }) => {
   const [isMounted, setIsMounted] = useState(false);
@@ -41,8 +46,102 @@ const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." })
   const [showQualityWarning, setShowQualityWarning] = useState(false);
   const [analyzingQuality, setAnalyzingQuality] = useState(false);
   const [pendingFile, setPendingFile] = useState(null);
+  const [lastInsertedImage, setLastInsertedImage] = useState(null);
   
-  const qualityAnalyzer = new ImageQualityAnalyzer();
+  // AI Detection Hook
+  const { analysis, analyze } = useAIImageDetector();
+  
+  // Quality analyzer functions (matching Featured Image component)
+  const qualityAnalyzer = {
+    analyzeImageQuality: async (file) => {
+      return new Promise((resolve) => {
+        const img = new window.Image();
+        img.onload = () => {
+          const width = img.width;
+          const height = img.height;
+          const fileSize = file.size;
+          
+          console.log('RTE Quality Analysis:', { width, height, fileSize, fileName: file.name });
+          
+          // More strict quality scoring (same as Featured Image)
+          const resolutionScore = width >= 1200 && height >= 800 ? 90 : 
+                                width >= 800 && height >= 600 ? 70 : 
+                                width >= 600 && height >= 400 ? 50 : 
+                                width >= 400 && height >= 300 ? 30 : 10;
+          
+          const sizeScore = fileSize > 2 * 1024 * 1024 ? 90 : 
+                           fileSize > 1 * 1024 * 1024 ? 70 : 
+                           fileSize > 500 * 1024 ? 50 : 
+                           fileSize > 200 * 1024 ? 30 : 10;
+          
+          const overallScore = (resolutionScore + sizeScore) / 2;
+          
+          let overall = 'excellent';
+          if (overallScore < 30) overall = 'very poor';
+          else if (overallScore < 50) overall = 'poor';
+          else if (overallScore < 70) overall = 'fair';
+          else if (overallScore < 85) overall = 'good';
+          
+          console.log('RTE Quality Scores:', { resolutionScore, sizeScore, overallScore, overall });
+          
+          const recommendations = [];
+          if (width < 800 || height < 600) {
+            recommendations.push('Consider using an image with at least 800x600 resolution for better quality');
+          }
+          if (width < 400 || height < 300) {
+            recommendations.push('Image resolution is very low and may appear pixelated');
+          }
+          if (fileSize < 200 * 1024) {
+            recommendations.push('Image file size is very small, which may indicate heavy compression');
+          }
+          if (fileSize < 100 * 1024) {
+            recommendations.push('File size is extremely small - image quality may be severely compromised');
+          }
+          if (overallScore < 50) {
+            recommendations.push('This image may not display well on larger screens or in print');
+          }
+          if (recommendations.length === 0) {
+            recommendations.push('Image quality looks good for web use');
+          }
+          
+          const analysis = {
+            width,
+            height,
+            fileSize,
+            overall,
+            score: overallScore,
+            resolution: {
+              score: resolutionScore,
+              quality: resolutionScore >= 70 ? 'good' : resolutionScore >= 50 ? 'fair' : 'poor'
+            },
+            blur: {
+              isBlurry: false, // Simplified - can be enhanced later
+              quality: 'sharp'
+            },
+            recommendations
+          };
+          
+          console.log('RTE Final Analysis:', analysis);
+          resolve(analysis);
+        };
+        img.onerror = () => {
+          resolve({
+            overall: 'unknown',
+            score: 0,
+            recommendations: ['Could not analyze image quality'],
+            error: true
+          });
+        };
+        img.src = URL.createObjectURL(file);
+      });
+    },
+    
+    meetsMinimumQuality: (analysis) => {
+      const meets = analysis.score >= 60; // Same threshold as Featured Image
+      console.log('RTE Quality Check:', { score: analysis.score, meets, threshold: 60 });
+      return meets;
+    }
+  };
 
   // Trusted domains for external images
   const trustedDomains = [
@@ -190,14 +289,19 @@ const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." })
     setShowQualityWarning(false);
 
     try {
+      // Start AI analysis and image upload in parallel
+      const analysisPromise = analyze(file);
+      
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/upload/image', {
+      const uploadPromise = fetch('/api/upload/image', {
         method: 'POST',
         body: formData,
       });
 
+      // Wait for both upload and analysis to complete
+      const [response, analysisResult] = await Promise.all([uploadPromise, analysisPromise]);
       const data = await response.json();
 
       if (!response.ok) {
@@ -207,6 +311,13 @@ const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." })
       // Insert image at cursor position
       if (editor) {
         editor.chain().focus().setImage({ src: data.url }).run();
+        
+        // Store the last inserted image with AI analysis for display
+        setLastInsertedImage({
+          url: data.url,
+          analysis: analysisResult
+        });
+        
         setShowImageDialog(false);
         setImageUrl('');
         setQualityAnalysis(null);
@@ -236,16 +347,42 @@ const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." })
     setUploadError('');
 
     try {
-      // Test if the image loads
+      // Test if the image loads and run AI analysis
       const img = new window.Image();
-      img.onload = () => {
-        // Insert image at cursor position
-        if (editor) {
-          editor.chain().focus().setImage({ src: imageUrl.trim() }).run();
-          setShowImageDialog(false);
-          setImageUrl('');
+      img.onload = async () => {
+        try {
+          // Create a fake file object for AI analysis
+          const fakeFile = new File([], imageUrl.trim(), { type: 'image/jpeg' });
+          const analysisResult = await analyze(fakeFile);
+          
+          // Insert image at cursor position
+          if (editor) {
+            editor.chain().focus().setImage({ src: imageUrl.trim() }).run();
+            
+            // Store the last inserted image with AI analysis for display
+            setLastInsertedImage({
+              url: imageUrl.trim(),
+              analysis: analysisResult
+            });
+            
+            setShowImageDialog(false);
+            setImageUrl('');
+          }
+          setUploading(false);
+        } catch (error) {
+          console.error('Analysis error:', error);
+          // Still insert image without analysis if AI detection fails
+          if (editor) {
+            editor.chain().focus().setImage({ src: imageUrl.trim() }).run();
+            setLastInsertedImage({
+              url: imageUrl.trim(),
+              analysis: null
+            });
+            setShowImageDialog(false);
+            setImageUrl('');
+          }
+          setUploading(false);
         }
-        setUploading(false);
       };
       img.onerror = () => {
         setUploadError('Failed to load image from URL. Please check the URL and try again.');
@@ -304,6 +441,7 @@ const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." })
     setQualityAnalysis(null);
     setShowQualityWarning(false);
     setPendingFile(null);
+    // Keep lastInsertedImage for displaying AI results
   };
 
   const handleUploadAnyway = () => {
@@ -318,6 +456,23 @@ const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." })
     setPendingFile(null);
     setUploadError('');
   };
+
+  // AI Detection console logging
+  useEffect(() => {
+    if (analysis) {
+      console.log("AI Analysis for inserted image:", analysis);
+    }
+  }, [analysis]);
+
+  // Clear last inserted image analysis after some time
+  useEffect(() => {
+    if (lastInsertedImage) {
+      const timer = setTimeout(() => {
+        setLastInsertedImage(null);
+      }, 10000); // Clear after 10 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [lastInsertedImage]);
 
   const getQualityIcon = (quality) => {
     switch (quality) {
@@ -746,6 +901,7 @@ const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." })
                 <div className="text-blue-700 text-xs space-y-1">
                   <p>• Images will be inserted at your cursor position</p>
                   <p>• Automatic quality check for blur, resolution, and compression</p>
+                  <p>• AI detection for generated/enhanced content</p>
                   <p>• Drag & drop images directly into the editor</p>
                   <p>• Supported formats: JPG, PNG, WEBP (max 5MB)</p>
                   <p>• Recommended: 800×600px minimum, sharp focus</p>
@@ -754,6 +910,27 @@ const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." })
               </div>
             </div>
           </div>
+        </div>
+      )}
+      
+      {/* AI Detection Results for Last Inserted Image */}
+      {lastInsertedImage && lastInsertedImage.analysis && (
+        <div className="mt-4 border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-900 flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              Last Inserted Image Analysis
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLastInsertedImage(null)}
+              className="text-gray-400 hover:text-gray-600 h-6 w-6 p-0"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+          <AIImageDetectionResults analysis={lastInsertedImage.analysis} />
         </div>
       )}
     </div>
