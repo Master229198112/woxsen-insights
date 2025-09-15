@@ -2,14 +2,21 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Upload, X, Image as ImageIcon, Link as LinkIcon, Globe } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Link as LinkIcon, Globe, AlertTriangle, CheckCircle, Eye, Zap } from 'lucide-react';
 import Image from 'next/image';
+import { ImageQualityAnalyzer } from '@/lib/imageQuality';
 
 const ImageUpload = ({ onImageUploaded, currentImage }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [uploadMethod, setUploadMethod] = useState('upload'); // 'upload' or 'url'
   const [imageUrl, setImageUrl] = useState('');
+  const [qualityAnalysis, setQualityAnalysis] = useState(null);
+  const [showQualityWarning, setShowQualityWarning] = useState(false);
+  const [analyzingQuality, setAnalyzingQuality] = useState(false);
+  const [pendingFile, setPendingFile] = useState(null);
+  
+  const qualityAnalyzer = new ImageQualityAnalyzer();
 
   // Trusted domains for external images
   const trustedDomains = [
@@ -69,7 +76,7 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
     }
   };
 
-  const handleFileUpload = async (file) => {
+  const handleFileUpload = async (file, forceUpload = false) => {
     if (!file) return;
 
     // Validate file type
@@ -84,8 +91,34 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
       return;
     }
 
+    // Analyze image quality first (unless forcing upload)
+    if (!forceUpload) {
+      setAnalyzingQuality(true);
+      setUploadError('');
+      setPendingFile(file);
+      
+      try {
+        const analysis = await qualityAnalyzer.analyzeImageQuality(file);
+        setQualityAnalysis(analysis);
+        
+        // Check if image meets minimum quality standards
+        if (!qualityAnalyzer.meetsMinimumQuality(analysis)) {
+          setShowQualityWarning(true);
+          setAnalyzingQuality(false);
+          return; // Don't upload yet, show warning
+        }
+      } catch (error) {
+        console.error('Quality analysis error:', error);
+        // Continue with upload if analysis fails
+      }
+      
+      setAnalyzingQuality(false);
+    }
+
+    // Proceed with upload
     setUploading(true);
     setUploadError('');
+    setShowQualityWarning(false);
 
     try {
       const formData = new FormData();
@@ -103,6 +136,8 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
       }
 
       onImageUploaded(data.url);
+      setQualityAnalysis(null);
+      setPendingFile(null);
     } catch (error) {
       setUploadError(error.message);
       console.error('Upload error:', error);
@@ -160,6 +195,52 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
   const removeImage = () => {
     onImageUploaded('');
     setImageUrl('');
+    setQualityAnalysis(null);
+    setShowQualityWarning(false);
+    setPendingFile(null);
+  };
+
+  const handleUploadAnyway = () => {
+    if (pendingFile) {
+      handleFileUpload(pendingFile, true); // Force upload
+    }
+  };
+
+  const handleCancelUpload = () => {
+    setShowQualityWarning(false);
+    setQualityAnalysis(null);
+    setPendingFile(null);
+    setUploadError('');
+  };
+
+  const getQualityIcon = (quality) => {
+    switch (quality) {
+      case 'excellent':
+      case 'good':
+        return <CheckCircle className="h-5 w-5 text-green-600" />;
+      case 'fair':
+        return <Eye className="h-5 w-5 text-yellow-600" />;
+      case 'poor':
+      case 'very poor':
+        return <AlertTriangle className="h-5 w-5 text-red-600" />;
+      default:
+        return <Zap className="h-5 w-5 text-gray-600" />;
+    }
+  };
+
+  const getQualityColor = (quality) => {
+    switch (quality) {
+      case 'excellent':
+      case 'good':
+        return 'bg-green-50 border-green-200 text-green-800';
+      case 'fair':
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+      case 'poor':
+      case 'very poor':
+        return 'bg-red-50 border-red-200 text-red-800';
+      default:
+        return 'bg-gray-50 border-gray-200 text-gray-800';
+    }
   };
 
   return (
@@ -210,6 +291,88 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
           </Button>
           <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
             {currentImage.includes('cloudinary') ? 'Uploaded' : 'External URL'}
+          </div>
+        </div>
+      ) : showQualityWarning && qualityAnalysis ? (
+        /* Quality Warning Dialog */
+        <div className={`border-2 rounded-lg p-6 ${getQualityColor(qualityAnalysis.overall)}`}>
+          <div className="flex items-start space-x-3 mb-4">
+            {getQualityIcon(qualityAnalysis.overall)}
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg mb-2">
+                Image Quality: {qualityAnalysis.overall.charAt(0).toUpperCase() + qualityAnalysis.overall.slice(1)}
+              </h3>
+              <div className="text-sm space-y-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="font-medium">Resolution:</span> {qualityAnalysis.width}×{qualityAnalysis.height}
+                    <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                      qualityAnalysis.resolution.score >= 60 ? 'bg-green-100 text-green-800' : 
+                      qualityAnalysis.resolution.score >= 40 ? 'bg-yellow-100 text-yellow-800' : 
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {qualityAnalysis.resolution.quality}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Sharpness:</span> 
+                    <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                      !qualityAnalysis.blur.isBlurry ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {qualityAnalysis.blur.quality}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mb-4">
+            <h4 className="font-medium mb-2">Recommendations:</h4>
+            <ul className="text-sm space-y-1 list-disc list-inside">
+              {qualityAnalysis.recommendations.map((rec, index) => (
+                <li key={index}>{rec}</li>
+              ))}
+            </ul>
+          </div>
+          
+          <div className="flex space-x-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancelUpload}
+              className="flex-1"
+            >
+              Choose Different Image
+            </Button>
+            <Button
+              type="button"
+              onClick={handleUploadAnyway}
+              disabled={uploading}
+              className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              {uploading ? (
+                <div className="flex items-center">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Uploading...
+                </div>
+              ) : (
+                'Upload Anyway'
+              )}
+            </Button>
+          </div>
+        </div>
+      ) : analyzingQuality ? (
+        /* Quality Analysis Loading */
+        <div className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center">
+          <div className="space-y-4">
+            <div className="flex justify-center">
+              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <div>
+              <p className="text-lg font-medium text-gray-900">Analyzing Image Quality...</p>
+              <p className="text-sm text-gray-600">Checking resolution, sharpness, and compression</p>
+            </div>
           </div>
         </div>
       ) : uploadMethod === 'upload' ? (
@@ -320,10 +483,12 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
 
       {/* Help Information */}
       <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-        <p className="text-blue-800 text-sm font-medium mb-2">Supported Image Sources:</p>
+        <p className="text-blue-800 text-sm font-medium mb-2">Image Quality & Sources:</p>
         <div className="text-blue-700 text-xs space-y-1">
           <p><strong>Upload:</strong> JPG, PNG, WEBP (max 5MB)</p>
-          <p><strong>External URLs from:</strong> Imgur, Pexels, GitHub, University domains (URL must end with image format eg. .jpg, .png, etc.)</p>
+          <p><strong>Quality Check:</strong> Automatic analysis for blur, resolution, and compression</p>
+          <p><strong>External URLs from:</strong> Imgur, Pexels, GitHub, University domains</p>
+          <p><strong>Minimum recommended:</strong> 800×600px, sharp focus, minimal compression</p>
         </div>
       </div>
     </div>

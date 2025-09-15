@@ -73,6 +73,7 @@ const DynamicPostForm = () => {
     category: '',
     tags: [],
     featuredImage: '',
+    slug: '', // Add slug to form data
     // Category-specific data will be added here
     researchData: null,
     patentData: null,
@@ -205,11 +206,34 @@ const DynamicPostForm = () => {
     }
   };
 
+  // Helper function to generate slug from title
+  const generateSlugFromTitle = (title) => {
+    if (!title || typeof title !== 'string') {
+      return '';
+    }
+    
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-zA-Z0-9\s-]/g, '') // Remove special characters but keep hyphens
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+      .substring(0, 50) // Limit length
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Auto-generate slug when title changes
+    const updates = { [name]: value };
+    if (name === 'title') {
+      updates.slug = generateSlugFromTitle(value);
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      ...updates
     }));
     
     // Clear errors when user starts typing

@@ -9,6 +9,53 @@ import Achievement from '@/models/Achievement';
 import Event from '@/models/Event';
 import User from '@/models/User';
 
+// Helper function to generate slug
+function generateSlug(title) {
+  if (!title || typeof title !== 'string') {
+    return `post-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+  
+  let slug = title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-zA-Z0-9\s-]/g, '') // Remove special characters but keep hyphens
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+    .substring(0, 50) // Limit length
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+  
+  // If slug is empty after processing, use fallback
+  if (!slug || slug.length === 0) {
+    slug = `post-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+  
+  return slug;
+}
+
+// Function to ensure unique slug
+async function generateUniqueSlug(title, excludeId = null) {
+  const baseSlug = generateSlug(title);
+  let slug = baseSlug;
+  let counter = 1;
+  
+  // Check for existing slugs and make unique
+  let existingBlog = await Blog.findOne({ 
+    slug, 
+    ...(excludeId && { _id: { $ne: excludeId } })
+  });
+  
+  while (existingBlog) {
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+    existingBlog = await Blog.findOne({ 
+      slug, 
+      ...(excludeId && { _id: { $ne: excludeId } })
+    });
+  }
+  
+  return slug;
+}
+
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -48,6 +95,9 @@ export async function POST(request) {
       return NextResponse.json({ error: 'User not approved to create posts' }, { status: 403 });
     }
 
+    // Generate unique slug before creating the post
+    const uniqueSlug = await generateUniqueSlug(postData.title);
+
     // Create the base blog post first
     const blogPost = new Blog({
       title: postData.title,
@@ -57,6 +107,7 @@ export async function POST(request) {
       category: category,
       tags: postData.tags || [],
       featuredImage: postData.featuredImage,
+      slug: uniqueSlug, // Explicitly set the slug
       status: 'pending' // All posts start as pending review
     });
 

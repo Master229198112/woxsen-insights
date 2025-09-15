@@ -182,8 +182,9 @@ function generateSlug(title) {
 // Generate unique slug before saving - MORE ROBUST VERSION
 blogSchema.pre('save', async function(next) {
   try {
-    // Always ensure we have a slug
-    if (!this.slug || this.isModified('title')) {
+    // Always ensure we have a slug, especially if it's missing or title changed
+    if (!this.slug || this.isModified('title') || this.slug === '' || this.slug === null) {
+      console.log('Generating slug for blog:', this.title);
       const baseSlug = generateSlug(this.title);
       let slug = baseSlug;
       let counter = 1;
@@ -204,12 +205,15 @@ blogSchema.pre('save', async function(next) {
       }
       
       this.slug = slug;
+      console.log('Generated slug:', slug);
     }
     
     next();
   } catch (error) {
+    console.error('Error generating slug:', error);
     // If slug generation fails, create a unique fallback
     this.slug = `post-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    console.log('Using fallback slug:', this.slug);
     next();
   }
 });
