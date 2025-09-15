@@ -1,22 +1,15 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Upload, X, Image as ImageIcon, Link as LinkIcon, Globe, AlertTriangle, CheckCircle, Eye, Zap } from 'lucide-react';
 import Image from 'next/image';
-import { ImageQualityAnalyzer } from '@/lib/imageQuality';
 
 const ImageUpload = ({ onImageUploaded, currentImage }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [uploadMethod, setUploadMethod] = useState('upload'); // 'upload' or 'url'
   const [imageUrl, setImageUrl] = useState('');
-  const [qualityAnalysis, setQualityAnalysis] = useState(null);
-  const [showQualityWarning, setShowQualityWarning] = useState(false);
-  const [analyzingQuality, setAnalyzingQuality] = useState(false);
-  const [pendingFile, setPendingFile] = useState(null);
-  
-  const qualityAnalyzer = new ImageQualityAnalyzer();
 
   // Trusted domains for external images
   const trustedDomains = [
@@ -36,6 +29,7 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
     'amazonaws.com',
     'blob.core.windows.net'
   ];
+
 
   const validateImageUrl = (url) => {
     try {
@@ -121,14 +115,19 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
     setShowQualityWarning(false);
 
     try {
+      // Start AI analysis and image upload in parallel
+      const analysisPromise = analyze(file);
+
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/upload/image', {
+      const uploadPromise = fetch('/api/upload/image', {
         method: 'POST',
         body: formData,
       });
 
+      // Wait for both upload and analysis to complete
+      const [response, analysisResult] = await Promise.all([uploadPromise, analysisPromise]);
       const data = await response.json();
 
       if (!response.ok) {
@@ -136,8 +135,6 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
       }
 
       onImageUploaded(data.url);
-      setQualityAnalysis(null);
-      setPendingFile(null);
     } catch (error) {
       setUploadError(error.message);
       console.error('Upload error:', error);
@@ -163,13 +160,17 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
     setUploadError('');
 
     try {
-      // Test if the image loads
+      // Test if the image loads and run analysis
       const img = new window.Image();
-      img.onload = () => {
-        onImageUploaded(imageUrl.trim());
+      img.onload = async () => {
+        // simulate file object for detector
+        const fakeFile = new File([], imageUrl.trim(), { type: 'image/jpeg' });
+        const analysisResult = await analyze(fakeFile);
+        onImageUploaded(imageUrl.trim(), analysisResult);
         setImageUrl('');
         setUploading(false);
       };
+
       img.onerror = () => {
         setUploadError('Failed to load image from URL. Please check the URL and try again.');
         setUploading(false);
@@ -179,6 +180,7 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
       setUploadError('Error validating image URL');
       setUploading(false);
     }
+    
   };
 
   const handleDrop = (e) => {
@@ -242,6 +244,14 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
         return 'bg-gray-50 border-gray-200 text-gray-800';
     }
   };
+
+  useEffect(()=>{
+
+    if(analysis){
+      console.log("Full analysis : ",analysis)
+    }
+
+  },[analysis])
 
   return (
     <div className="space-y-4">
@@ -474,6 +484,11 @@ const ImageUpload = ({ onImageUploaded, currentImage }) => {
           </div>
         </div>
       )}
+
+      {currentImage && (
+  <AIImageDetectionResults analysis={analysis} />
+)}
+
 
       {uploadError && (
         <div className="bg-red-50 border border-red-200 rounded-md p-3">
