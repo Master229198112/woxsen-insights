@@ -73,6 +73,7 @@ const DynamicPostForm = () => {
     category: '',
     tags: [],
     featuredImage: '',
+    slug: '', // Add slug to form data
     // Category-specific data will be added here
     researchData: null,
     patentData: null,
