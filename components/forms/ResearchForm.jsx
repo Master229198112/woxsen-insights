@@ -15,7 +15,8 @@ import {
   ExternalLink,
   FileUp,
   Award,
-  BarChart3
+  BarChart3,
+  FileText
 } from 'lucide-react';
 
 const ResearchForm = ({ data, onChange, errors = [] }) => {
@@ -57,7 +58,8 @@ const ResearchForm = ({ data, onChange, errors = [] }) => {
       approvalNumber: '',
       approvalDate: ''
     },
-    pdfUrl: '',
+    pdfFile: null, // For uploaded PDF
+    pdfUrl: '', // For external URL (legacy support)
     supplementaryFiles: [],
     externalLinks: {
       pubmedId: '',
@@ -81,6 +83,18 @@ const ResearchForm = ({ data, onChange, errors = [] }) => {
         [field]: value
       }
     };
+    onChange(updatedData);
+  };
+
+  // Handle PDF upload
+  const handlePDFUploaded = (pdfData) => {
+    const updatedData = { ...formData, pdfFile: pdfData };
+    onChange(updatedData);
+  };
+
+  // Handle supplementary files upload
+  const handleSupplementaryFilesUploaded = (files) => {
+    const updatedData = { ...formData, supplementaryFiles: files };
     onChange(updatedData);
   };
 
@@ -631,6 +645,76 @@ const ResearchForm = ({ data, onChange, errors = [] }) => {
         </CardContent>
       </Card>
 
+      {/* PDF Upload Section - NEW ENHANCED SECTION */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <FileText className="h-5 w-5 mr-2" />
+            Research Paper PDF
+          </CardTitle>
+          <p className="text-sm text-gray-600 mt-1">
+            Upload the full research paper PDF or provide a direct link to the paper
+          </p>
+        </CardHeader>
+        <CardContent>
+          <PDFUpload
+            onPDFUploaded={handlePDFUploaded}
+            currentPDF={formData.pdfFile}
+            label="Upload Research Paper PDF"
+            placeholder="https://arxiv.org/pdf/2023.12345.pdf"
+            maxSize={15 * 1024 * 1024} // 15MB for research papers
+          />
+          {getFieldError('pdfFile') && (
+            <p className="text-red-600 text-sm mt-2">{getFieldError('pdfFile')}</p>
+          )}
+          
+          {/* Legacy URL field for backward compatibility
+          {!formData.pdfFile && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <label htmlFor="pdfUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                Or enter PDF URL (Legacy)
+              </label>
+              <Input
+                id="pdfUrl"
+                type="url"
+                value={formData.pdfUrl}
+                onChange={(e) => handleInputChange('pdfUrl', e.target.value)}
+                placeholder="https://example.com/paper.pdf"
+              />
+              {getFieldError('pdfUrl') && (
+                <p className="text-red-600 text-sm mt-1">{getFieldError('pdfUrl')}</p>
+              )}
+            </div>
+          )} */}
+        </CardContent>
+      </Card>
+
+      {/* Supplementary Files Section - NEW */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <FileUp className="h-5 w-5 mr-2" />
+            Supplementary Materials
+          </CardTitle>
+          <p className="text-sm text-gray-600 mt-1">
+            Upload additional files like datasets, code, appendices, or supporting documents
+          </p>
+        </CardHeader>
+        <CardContent>
+          <FileUpload
+            onFileUploaded={handleSupplementaryFilesUploaded}
+            currentFiles={formData.supplementaryFiles}
+            allowedTypes={['pdf', 'document', 'image']}
+            multiple={true}
+            maxFiles={5}
+            label="Upload Supplementary Files"
+          />
+          {getFieldError('supplementaryFiles') && (
+            <p className="text-red-600 text-sm mt-2">{getFieldError('supplementaryFiles')}</p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Additional Information */}
       <Card>
         <CardHeader>
@@ -680,24 +764,6 @@ const ResearchForm = ({ data, onChange, errors = [] }) => {
                   />
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* PDF URL */}
-          <div>
-            <label htmlFor="pdfUrl" className="block text-sm font-medium text-gray-700 mb-2">
-              <FileUp className="inline h-4 w-4 mr-1" />
-              PDF URL
-            </label>
-            <Input
-              id="pdfUrl"
-              type="url"
-              value={formData.pdfUrl}
-              onChange={(e) => handleInputChange('pdfUrl', e.target.value)}
-              placeholder="https://..."
-            />
-            {getFieldError('pdfUrl') && (
-              <p className="text-red-600 text-sm mt-1">{getFieldError('pdfUrl')}</p>
             )}
           </div>
 

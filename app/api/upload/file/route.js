@@ -121,7 +121,11 @@ export async function POST(request) {
 
     // Add specific configurations for PDFs
     if (category === 'pdf') {
-      uploadOptions.flags = 'attachment'; // Ensures proper download behavior
+      // Make PDFs publicly accessible
+      uploadOptions.access_mode = 'public';
+      uploadOptions.type = 'upload';
+      // Remove attachment flag to allow direct viewing
+      // uploadOptions.flags = 'attachment'; // Commented out to allow public access
     }
 
     const uploadResult = await new Promise((resolve, reject) => {

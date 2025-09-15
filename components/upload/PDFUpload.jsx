@@ -63,39 +63,33 @@ const PDFUpload = ({
     try {
       const urlObj = new URL(url);
       
-      // Check if the domain is in our trusted list
-      const isDomainTrusted = trustedDomains.some(domain => {
-        return urlObj.hostname === domain || 
-               urlObj.hostname.endsWith('.' + domain) ||
-               urlObj.hostname.includes(domain);
-      });
-
-      if (!isDomainTrusted) {
-        return { valid: false, error: 'Domain not in trusted list. Please contact admin to add this domain.' };
+      // Allow any HTTPS URL (more permissive approach)
+      if (urlObj.protocol !== 'https:') {
+        return { valid: false, error: 'Only HTTPS URLs are allowed for security reasons.' };
       }
 
-      // Check if URL looks like a PDF
-      const isPDFUrl = urlObj.pathname.toLowerCase().includes('.pdf');
-      
-      // For known academic/document services, we might not have .pdf extension
-      const isKnownPDFService = [
-        'drive.google.com',
-        'onedrive.live.com',
-        'dropbox.com',
-        'arxiv.org',
-        'researchgate.net',
-        'academia.edu',
-        'ieee.org',
-        'acm.org'
-      ].some(service => urlObj.hostname.includes(service));
-
-      if (!isPDFUrl && !isKnownPDFService) {
-        return { valid: false, error: 'URL does not appear to be a PDF file. Please ensure it\'s a direct PDF link.' };
-      }
+      // Optional: Check if URL looks like a PDF (commented out for maximum flexibility)
+      // const isPDFUrl = urlObj.pathname.toLowerCase().includes('.pdf');
+      // 
+      // // For known academic/document services, we might not have .pdf extension
+      // const isKnownPDFService = [
+      //   'drive.google.com',
+      //   'onedrive.live.com',
+      //   'dropbox.com',
+      //   'arxiv.org',
+      //   'researchgate.net',
+      //   'academia.edu',
+      //   'ieee.org',
+      //   'acm.org'
+      // ].some(service => urlObj.hostname.includes(service));
+      //
+      // if (!isPDFUrl && !isKnownPDFService) {
+      //   return { valid: false, error: 'URL does not appear to be a PDF file. Please ensure it\'s a direct PDF link.' };
+      // }
 
       return { valid: true };
     } catch (error) {
-      return { valid: false, error: 'Invalid URL format' };
+      return { valid: false, error: 'Invalid URL format. Please enter a valid HTTPS URL.' };
     }
   };
 
@@ -347,7 +341,7 @@ const PDFUpload = ({
                 Use PDF from URL
               </p>
               <p className="text-sm text-gray-600">
-                Enter a direct link to a PDF from trusted academic sources
+                Enter any HTTPS link to a PDF document
               </p>
             </div>
             <div className="space-y-3">
@@ -397,11 +391,12 @@ const PDFUpload = ({
       )}
 
       {/* Help Information */}
-      <div className="bg-red-50 border border-red-200 rounded-md p-3">
-        <p className="text-red-800 text-sm font-medium mb-2">PDF Upload Guidelines:</p>
-        <div className="text-red-700 text-xs space-y-1">
+      <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+        <p className="text-blue-800 text-sm font-medium mb-2">PDF Upload Guidelines:</p>
+        <div className="text-blue-700 text-xs space-y-1">
           <p><strong>Supported:</strong> PDF files up to {Math.round(maxSize / (1024 * 1024))}MB</p>
-          <p><strong>External URLs from:</strong> ArXiv, ResearchGate, IEEE, ACM, Nature, Springer, etc.</p>
+          <p><strong>External URLs:</strong> Any HTTPS URL pointing to a PDF document</p>
+          <p><strong>Examples:</strong> Research papers, documentation, reports from any secure website</p>
           <p><strong>Best Practice:</strong> Ensure PDFs are text-searchable and properly formatted</p>
         </div>
       </div>
