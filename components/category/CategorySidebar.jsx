@@ -3,6 +3,53 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Trophy, Lightbulb, Calendar, Tag, User, Search, PenTool, Handshake } from 'lucide-react';
 
+// Define the current categories exactly as they appear in the navbar
+const CURRENT_CATEGORIES = [
+  { 
+    slug: 'research', 
+    name: 'Research & Publications', 
+    icon: BookOpen,
+    description: 'Academic studies, research papers, and journal articles'
+  },
+  { 
+    slug: 'achievements', 
+    name: 'Achievements', 
+    icon: Trophy,
+    description: 'Awards and accomplishments'
+  },
+  { 
+    slug: 'events', 
+    name: 'Events', 
+    icon: Calendar,
+    description: 'Campus events and conferences'
+  },
+  { 
+    slug: 'patents', 
+    name: 'Patents', 
+    icon: Lightbulb,
+    description: 'Innovation and intellectual property'
+  },
+  { 
+    slug: 'case-studies', 
+    name: 'Case Studies', 
+    icon: Search,
+    description: 'Real-world business case studies'
+  },
+  { 
+    slug: 'blogs', 
+    name: 'Blogs', 
+    icon: PenTool,
+    description: 'Insights and thought leadership'
+  },
+  { 
+    slug: 'industry-collaborations', 
+    name: 'Industry Collaborations', 
+    icon: Handshake,
+    description: 'Partnerships and collaborations'
+  }
+];
+
+// Icon mapping for categories
 const categoryIcons = {
   research: BookOpen,
   achievements: Trophy,
@@ -14,15 +61,8 @@ const categoryIcons = {
 };
 
 export default function CategorySidebar({ data, currentCategory }) {
-  const otherCategories = [
-    { slug: 'research', name: 'Research & Publications', icon: BookOpen },
-    { slug: 'achievements', name: 'Achievements', icon: Trophy },
-    { slug: 'events', name: 'Events', icon: Calendar },
-    { slug: 'patents', name: 'Patents', icon: Lightbulb },
-    { slug: 'case-studies', name: 'Case Studies', icon: Search },
-    { slug: 'blogs', name: 'Blogs', icon: PenTool },
-    { slug: 'industry-collaborations', name: 'Industry Collaborations', icon: Handshake },
-  ].filter(cat => cat.slug !== currentCategory);
+  // Filter out the current category and ensure we only show valid categories
+  const otherCategories = CURRENT_CATEGORIES.filter(cat => cat.slug !== currentCategory);
 
   return (
     <div className="space-y-6">
@@ -95,9 +135,14 @@ export default function CategorySidebar({ data, currentCategory }) {
                   className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors group"
                 >
                   <IconComponent className="h-5 w-5 text-gray-400 group-hover:text-blue-600 mr-3" />
-                  <span className="font-medium text-gray-900 group-hover:text-blue-600">
-                    {category.name}
-                  </span>
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900 group-hover:text-blue-600">
+                      {category.name}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {category.description}
+                    </div>
+                  </div>
                 </Link>
               );
             })}

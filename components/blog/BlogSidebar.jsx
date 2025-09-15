@@ -11,10 +11,10 @@ const BlogSidebar = ({ relatedBlogs, currentCategory }) => {
   const [subscriptionStatus, setSubscriptionStatus] = useState(''); // '', 'loading', 'success', 'error'
   const [subscriptionMessage, setSubscriptionMessage] = useState('');
 
+  // Updated categories to match navbar - consolidated Research & Publications
   const categories = [
-    { name: 'Research', href: '/category/research', color: 'bg-blue-100 text-blue-800' },
+    { name: 'Research & Publications', href: '/category/research', color: 'bg-blue-100 text-blue-800' },
     { name: 'Achievements', href: '/category/achievements', color: 'bg-green-100 text-green-800' },
-    { name: 'Publications', href: '/category/publications', color: 'bg-purple-100 text-purple-800' },
     { name: 'Events', href: '/category/events', color: 'bg-orange-100 text-orange-800' },
     { name: 'Patents', href: '/category/patents', color: 'bg-pink-100 text-pink-800' },
     { name: 'Case Studies', href: '/category/case-studies', color: 'bg-indigo-100 text-indigo-800' },
@@ -75,9 +75,15 @@ const BlogSidebar = ({ relatedBlogs, currentCategory }) => {
         <CardContent>
           <div className="space-y-2">
             {categories.map((category) => {
-              const categoryKey = category.name.toLowerCase().replace(/\s+/g, '-');
+              // Handle the consolidated "Research & Publications" category
+              let categoryKey = category.name.toLowerCase().replace(/\s+/g, '-');
+              if (category.name === 'Research & Publications') {
+                categoryKey = 'research'; // Map to 'research' slug
+              }
+              
               const isActive = currentCategory === categoryKey || 
-                             currentCategory === category.name.toLowerCase();
+                             currentCategory === category.name.toLowerCase() ||
+                             (category.name === 'Research & Publications' && currentCategory === 'research');
               
               return (
                 <Link 
