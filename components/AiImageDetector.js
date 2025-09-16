@@ -534,43 +534,6 @@ export function AIImageDetectionResults({ analysis }) {
           </div>
         )}
       </div>
-
-      {/* Detection Details */}
-      {analysis.indicators && analysis.indicators.length > 0 && (
-        <div className="mb-4">
-          <p className="font-medium text-gray-700 mb-2">Detection Indicators:</p>
-          <ul className="text-sm space-y-1">
-            {analysis.indicators.slice(0, 5).map((indicator, index) => (
-              <li key={index} className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">•</span>
-                <span className="text-gray-600">{indicator}</span>
-              </li>
-            ))}
-            {analysis.indicators.length > 5 && (
-              <li className="text-sm text-gray-500 italic">
-                ... and {analysis.indicators.length - 5} more indicators
-              </li>
-            )}
-          </ul>
-        </div>
-      )}
-
-      {/* Analysis Breakdown */}
-      {analysis.analysis && (
-        <div className="text-xs text-gray-500 border-t pt-2">
-          <p>Analysis sources: {analysis.analysis.totalSources} • 
-             Confidence breakdown: {analysis.analysis.confidenceBreakdown
-               .map(s => `${s.source}: ${(s.confidence * 100).toFixed(0)}%`)
-               .join(', ')}</p>
-        </div>
-      )}
-
-      {/* Error Display */}
-      {analysis.error && (
-        <div className="text-sm text-red-600 mt-2">
-          ⚠️ {analysis.error}
-        </div>
-      )}
     </div>
   );
 }
