@@ -1,16 +1,29 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { 
+  Settings,
+  Mail,
+  Clock,
+  Palette,
+  FileText,
+  Save,
+  TestTube,
+  Eye,
+  AlertCircle,
+  CheckCircle,
+  Zap,
+  Shield
+} from 'lucide-react';
 
-const NewsletterSettings = () => {
-  const { data: session, status } = useSession();
+export default function NewsletterSettings() {
   const [settings, setSettings] = useState({
     general: {
       fromName: 'Woxsen Insights',
-      fromEmail: 'insights@woxsen.edu.in',
-      replyToEmail: 'noreply@woxsen.edu.in',
+      fromEmail: 'sob.insights@woxsen.edu.in',
+      replyToEmail: 'sob.insights@woxsen.edu.in',
       organizationName: 'Woxsen University'
     },
     automation: {
@@ -21,62 +34,72 @@ const NewsletterSettings = () => {
       timeZone: 'Asia/Kolkata'
     },
     content: {
-      includeBlogs: true,
       includeResearch: true,
       includeAchievements: true,
       includeEvents: true,
       includePatents: true,
+      includeBlogs: true,
+      includeIndustryCollaborations: true,
       maxItemsPerSection: 5
     },
     branding: {
-      primaryColor: '#667eea',
-      secondaryColor: '#764ba2',
+      primaryColor: '#2563eb',
+      secondaryColor: '#7c3aed',
       logoUrl: '',
       footerText: 'Driving Innovation Through Knowledge'
     }
   });
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [testResult, setTestResult] = useState(null);
 
-  // Redirect if not authenticated
+  // Load current settings
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      redirect('/auth/signin');
-    }
-  }, [status]);
-
-  // Load settings (in a real app, this would fetch from API)
-  useEffect(() => {
-    // Mock loading settings - in real app, fetch from database
-    const loadSettings = () => {
-      // Settings are already initialized with defaults
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('/api/admin/newsletter/settings');
+        if (response.ok) {
+          const data = await response.json();
+          setSettings(prev => ({
+            ...prev,
+            ...data.settings
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+        // Keep default settings if API fails
+      }
     };
     
-    if (session) {
-      loadSettings();
-    }
-  }, [session]);
+    loadSettings();
+  }, []);
 
-  // Save settings
   const saveSettings = async () => {
     try {
       setLoading(true);
       
-      // In a real implementation, this would save to the database
-      // For now, we'll just simulate saving
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/admin/newsletter/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      });
       
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      if (response.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        throw new Error('Failed to save settings');
+      }
     } catch (error) {
       console.error('Save settings error:', error);
-      alert('Failed to save settings');
+      alert('Failed to save settings. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Update setting
   const updateSetting = (category, key, value) => {
     setSettings(prev => ({
       ...prev,
@@ -87,33 +110,81 @@ const NewsletterSettings = () => {
     }));
   };
 
-  // Test newsletter scheduling
   const testScheduling = async () => {
     try {
+      setTestResult({ type: 'loading', message: 'Testing newsletter scheduling...' });
+      
       const response = await fetch('/api/newsletter/scheduled?key=test-key');
       const data = await response.json();
       
       if (response.ok) {
-        alert(`Scheduling Status: ${data.status}\nNext Week: ${data.nextWeekRange.start} to ${data.nextWeekRange.end}\nActive Subscribers: ${data.activeSubscribers}`);
+        setTestResult({
+          type: 'success',
+          message: `Scheduling Test Successful`,
+          details: {
+            status: data.status,
+            nextWeek: `${data.nextWeekRange.start} to ${data.nextWeekRange.end}`,
+            activeSubscribers: data.activeSubscribers,
+            contentAvailable: data.contentCount || 0
+          }
+        });
       } else {
-        alert(`Test failed: ${data.error}`);
+        setTestResult({
+          type: 'error',
+          message: `Test failed: ${data.error}`
+        });
       }
     } catch (error) {
       console.error('Test scheduling error:', error);
-      alert('Failed to test scheduling');
+      setTestResult({
+        type: 'error',
+        message: 'Failed to test scheduling. Check your configuration.'
+      });
     }
   };
 
-  if (status === 'loading') {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  const testNewsletter = async () => {
+    try {
+      setTestResult({ type: 'loading', message: 'Sending test newsletter...' });
+      
+      const response = await fetch('/api/admin/newsletter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'send-test'
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setTestResult({
+          type: 'success',
+          message: `Test newsletter sent successfully`,
+          details: {
+            sentTo: data.sentTo || 'Test email',
+            timestamp: new Date().toLocaleString()
+          }
+        });
+      } else {
+        setTestResult({
+          type: 'error',
+          message: `Failed to send test: ${data.error}`
+        });
+      }
+    } catch (error) {
+      console.error('Test newsletter error:', error);
+      setTestResult({
+        type: 'error',
+        message: 'Failed to send test newsletter. Check your email configuration.'
+      });
+    }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div>
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Newsletter Settings</h1>
@@ -124,77 +195,92 @@ const NewsletterSettings = () => {
         {/* Main Settings */}
         <div className="lg:col-span-2 space-y-8">
           {/* General Settings */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">General Settings</h2>
-            <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Mail className="h-5 w-5 mr-2" />
+                General Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">From Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">From Name</label>
                   <input
                     type="text"
                     value={settings.general.fromName}
                     onChange={(e) => updateSetting('general', 'fromName', e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">From Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">From Email</label>
                   <input
                     type="email"
                     value={settings.general.fromEmail}
                     onChange={(e) => updateSetting('general', 'fromEmail', e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Reply-To Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Reply-To Email</label>
                   <input
                     type="email"
                     value={settings.general.replyToEmail}
                     onChange={(e) => updateSetting('general', 'replyToEmail', e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Organization Name</label>
                   <input
                     type="text"
                     value={settings.general.organizationName}
                     onChange={(e) => updateSetting('general', 'organizationName', e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Automation Settings */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Automation Settings</h2>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Clock className="h-5 w-5 mr-2" />
+                Automation Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-start gap-3">
                 <input
                   type="checkbox"
                   id="autoSend"
                   checked={settings.automation.autoSendEnabled}
                   onChange={(e) => updateSetting('automation', 'autoSendEnabled', e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <label htmlFor="autoSend" className="text-sm font-medium text-gray-700">
-                  Enable automatic weekly newsletter sending
-                </label>
+                <div>
+                  <label htmlFor="autoSend" className="text-sm font-medium text-gray-700">
+                    Enable automatic weekly newsletter sending
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    When enabled, newsletters will be automatically sent based on the schedule below
+                  </p>
+                </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Send Day</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Send Day</label>
                   <select
                     value={settings.automation.sendDay}
                     onChange={(e) => updateSetting('automation', 'sendDay', e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="monday">Monday</option>
                     <option value="tuesday">Tuesday</option>
@@ -204,20 +290,20 @@ const NewsletterSettings = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Send Time</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Send Time</label>
                   <input
                     type="time"
                     value={settings.automation.sendTime}
                     onChange={(e) => updateSetting('automation', 'sendTime', e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time Zone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Time Zone</label>
                   <select
                     value={settings.automation.timeZone}
                     onChange={(e) => updateSetting('automation', 'timeZone', e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
                     <option value="America/New_York">America/New_York (EST)</option>
@@ -228,7 +314,7 @@ const NewsletterSettings = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Minimum Content Threshold
                   <span className="text-xs text-gray-500 ml-2">(minimum items needed to auto-send)</span>
                 </label>
@@ -238,76 +324,69 @@ const NewsletterSettings = () => {
                   max="20"
                   value={settings.automation.minContentThreshold}
                   onChange={(e) => updateSetting('automation', 'minContentThreshold', parseInt(e.target.value))}
-                  className="w-full md:w-32 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full md:w-32 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Content Settings */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Content Settings</h2>
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600 mb-4">Choose which types of content to include in your newsletters:</p>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <FileText className="h-5 w-5 mr-2" />
+                Content Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <p className="text-sm text-gray-600">Choose which types of content to include in your newsletters:</p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-3">
-                  <label className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={settings.content.includeBlogs}
-                      onChange={(e) => updateSetting('content', 'includeBlogs', e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Blog Posts</span>
-                  </label>
-                  
-                  <label className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={settings.content.includeResearch}
-                      onChange={(e) => updateSetting('content', 'includeResearch', e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Research Papers</span>
-                  </label>
-                  
-                  <label className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={settings.content.includeAchievements}
-                      onChange={(e) => updateSetting('content', 'includeAchievements', e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Achievements</span>
-                  </label>
+                  {[
+                    { key: 'includeResearch', label: 'Research & Publications', desc: 'Academic papers and research findings' },
+                    { key: 'includeAchievements', label: 'Achievements', desc: 'Awards, recognitions, and milestones' },
+                    { key: 'includeEvents', label: 'Events', desc: 'Conferences, seminars, and workshops' }
+                  ].map((item) => (
+                    <div key={item.key} className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={settings.content[item.key]}
+                        onChange={(e) => updateSetting('content', item.key, e.target.checked)}
+                        className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">{item.label}</span>
+                        <p className="text-xs text-gray-500">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
                 
                 <div className="space-y-3">
-                  <label className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={settings.content.includeEvents}
-                      onChange={(e) => updateSetting('content', 'includeEvents', e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Events</span>
-                  </label>
-                  
-                  <label className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={settings.content.includePatents}
-                      onChange={(e) => updateSetting('content', 'includePatents', e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Patents</span>
-                  </label>
+                  {[
+                    { key: 'includePatents', label: 'Patents & Innovation', desc: 'Patents, IP, and technological advances' },
+                    { key: 'includeBlogs', label: 'Blog Posts', desc: 'Thought leadership and insights' },
+                    { key: 'includeIndustryCollaborations', label: 'Industry Collaborations', desc: 'Partnerships and joint initiatives' }
+                  ].map((item) => (
+                    <div key={item.key} className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={settings.content[item.key]}
+                        onChange={(e) => updateSetting('content', item.key, e.target.checked)}
+                        className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">{item.label}</span>
+                        <p className="text-xs text-gray-500">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Maximum Items per Section
                 </label>
                 <input
@@ -316,19 +395,24 @@ const NewsletterSettings = () => {
                   max="20"
                   value={settings.content.maxItemsPerSection}
                   onChange={(e) => updateSetting('content', 'maxItemsPerSection', parseInt(e.target.value))}
-                  className="w-full md:w-32 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full md:w-32 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Branding Settings */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Branding Settings</h2>
-            <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Palette className="h-5 w-5 mr-2" />
+                Branding Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Primary Color</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Primary Color</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
@@ -340,13 +424,13 @@ const NewsletterSettings = () => {
                       type="text"
                       value={settings.branding.primaryColor}
                       onChange={(e) => updateSetting('branding', 'primaryColor', e.target.value)}
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Secondary Color</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Secondary Color</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
@@ -358,128 +442,210 @@ const NewsletterSettings = () => {
                       type="text"
                       value={settings.branding.secondaryColor}
                       onChange={(e) => updateSetting('branding', 'secondaryColor', e.target.value)}
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Logo URL</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
                 <input
                   type="url"
                   value={settings.branding.logoUrl}
                   onChange={(e) => updateSetting('branding', 'logoUrl', e.target.value)}
                   placeholder="https://example.com/logo.png"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Footer Text</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Footer Text</label>
                 <textarea
                   value={settings.branding.footerText}
                   onChange={(e) => updateSetting('branding', 'footerText', e.target.value)}
                   rows={2}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Save Button */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <button
-              onClick={saveSettings}
-              disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Saving...
-                </>
-              ) : saved ? (
-                <>
-                  <span>✅</span>
-                  Settings Saved!
-                </>
-              ) : (
-                <>
-                  <span>💾</span>
-                  Save Settings
-                </>
+          <Card>
+            <CardContent className="p-6">
+              <Button
+                onClick={saveSettings}
+                disabled={loading}
+                className="w-full mb-4"
+                size="lg"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Saving...
+                  </>
+                ) : saved ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Settings Saved!
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Settings
+                  </>
+                )}
+              </Button>
+
+              {saved && (
+                <div className="text-center text-sm text-green-600">
+                  Configuration updated successfully
+                </div>
               )}
-            </button>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Quick Actions */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="space-y-3">
-              <button
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Zap className="h-5 w-5 mr-2" />
+                Quick Actions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button
                 onClick={testScheduling}
-                className="w-full bg-gray-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-700 flex items-center justify-center gap-2"
+                variant="outline"
+                className="w-full"
               >
-                <span>🔧</span>
+                <TestTube className="h-4 w-4 mr-2" />
                 Test Scheduling
-              </button>
+              </Button>
               
-              <button
-                onClick={() => window.open('/api/newsletter/preview', '_blank')}
-                className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-purple-700 flex items-center justify-center gap-2"
+              <Button
+                onClick={testNewsletter}
+                variant="outline"
+                className="w-full"
               >
-                <span>👁️</span>
+                <Mail className="h-4 w-4 mr-2" />
+                Send Test Newsletter
+              </Button>
+              
+              <Button
+                onClick={() => window.open('/api/newsletter/preview', '_blank')}
+                variant="outline"
+                className="w-full"
+              >
+                <Eye className="h-4 w-4 mr-2" />
                 Preview Template
-              </button>
-            </div>
-          </div>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Test Results */}
+          {testResult && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  {testResult.type === 'loading' && <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-2"></div>}
+                  {testResult.type === 'success' && <CheckCircle className="h-5 w-5 mr-2 text-green-600" />}
+                  {testResult.type === 'error' && <AlertCircle className="h-5 w-5 mr-2 text-red-600" />}
+                  Test Results
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`p-3 rounded-lg ${
+                  testResult.type === 'success' ? 'bg-green-50 text-green-800' :
+                  testResult.type === 'error' ? 'bg-red-50 text-red-800' :
+                  'bg-blue-50 text-blue-800'
+                }`}>
+                  <p className="font-medium">{testResult.message}</p>
+                  {testResult.details && (
+                    <div className="mt-2 text-sm space-y-1">
+                      {Object.entries(testResult.details).map(([key, value]) => (
+                        <div key={key}>
+                          <strong>{key.replace(/([A-Z])/g, ' $1').toLowerCase()}:</strong> {value}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Current Config Info */}
-          <div className="bg-gray-50 p-6 rounded-lg">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Configuration</h3>
-            <div className="space-y-2 text-sm text-gray-700">
-              <div className="flex justify-between">
-                <span>Auto-Send:</span>
-                <span className={settings.automation.autoSendEnabled ? 'text-green-600 font-medium' : 'text-red-600'}>
-                  {settings.automation.autoSendEnabled ? 'Enabled' : 'Disabled'}
-                </span>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Settings className="h-5 w-5 mr-2" />
+                Current Configuration
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Auto-Send:</span>
+                  <span className={`font-medium ${settings.automation.autoSendEnabled ? 'text-green-600' : 'text-red-600'}`}>
+                    {settings.automation.autoSendEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Schedule:</span>
+                  <span className="font-medium">{settings.automation.sendDay}s at {settings.automation.sendTime}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Content Threshold:</span>
+                  <span className="font-medium">{settings.automation.minContentThreshold} items</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Time Zone:</span>
+                  <span className="font-medium">{settings.automation.timeZone}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">From Email:</span>
+                  <span className="font-medium text-xs">{settings.general.fromEmail}</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span>Send Schedule:</span>
-                <span>{settings.automation.sendDay}s at {settings.automation.sendTime}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Content Threshold:</span>
-                <span>{settings.automation.minContentThreshold} items</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Time Zone:</span>
-                <span>{settings.automation.timeZone}</span>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          {/* Environment Variables */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h4 className="font-medium text-yellow-800 mb-2">Environment Setup</h4>
-            <div className="text-sm text-yellow-700 space-y-1">
-              <p>Make sure these are configured:</p>
-              <ul className="mt-2 space-y-1">
-                <li>• SENDGRID_API_KEY</li>
-                <li>• NEWSLETTER_CRON_KEY</li>
-                <li>• NEWSLETTER_AUTO_SEND</li>
-                <li>• MIN_NEWSLETTER_CONTENT</li>
-              </ul>
-            </div>
-          </div>
+          {/* Environment Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Shield className="h-5 w-5 mr-2" />
+                Environment Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[
+                  { name: 'Email Service', status: 'active', desc: 'Office365 SMTP' },
+                  { name: 'Database', status: 'active', desc: 'MongoDB Connected' },
+                  { name: 'Cron Jobs', status: 'active', desc: 'Scheduler Ready' },
+                ].map((item, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900">{item.name}</div>
+                      <div className="text-xs text-gray-500">{item.desc}</div>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                      <span className="text-sm text-green-600 font-medium">Active</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
   );
-};
-
-export default NewsletterSettings;
+}

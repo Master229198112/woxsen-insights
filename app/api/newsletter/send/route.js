@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import connectDB from '@/lib/mongodb';
 import Newsletter from '@/models/Newsletter';
 import NewsletterSubscriber from '@/models/NewsletterSubscriber';
+import EmailTrackingService from '@/lib/email-tracking';
 import EmailService from '@/lib/email-service';
 
 // POST - Send newsletter

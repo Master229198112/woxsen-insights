@@ -1,41 +1,109 @@
 'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import { NewsletterSubscription } from '@/components/Newsletter';
-import { CheckCircle, Calendar, Users, TrendingUp, Award, BookOpen, Lightbulb } from 'lucide-react';
+import { 
+  CheckCircle, 
+  Calendar, 
+  Users, 
+  TrendingUp, 
+  Award, 
+  BookOpen, 
+  Lightbulb,
+  Mail,
+  Eye,
+  ArrowRight,
+  PenTool,
+  FileText,
+  Search,
+  Handshake
+} from 'lucide-react';
 
 const NewsletterLandingPage = () => {
+  const [stats, setStats] = useState({
+    totalSubscribers: 0,
+    weeklyContent: 0,
+    recentNewsletters: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Fetch real newsletter stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/admin/newsletter?action=stats');
+        if (response.ok) {
+          const data = await response.json();
+          setStats({
+            totalSubscribers: data.stats.active || 0,
+            weeklyContent: Object.values(data.weeklyContent || {}).reduce((a, b) => a + b, 0) || 0,
+            recentNewsletters: data.stats.total || 0
+          });
+        } else {
+          // For new website, show real zero stats
+          setStats({
+            totalSubscribers: 0,
+            weeklyContent: 0,
+            recentNewsletters: 0
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching newsletter stats:', error);
+        // For new website, show real zero stats
+        setStats({
+          totalSubscribers: 0,
+          weeklyContent: 0,
+          recentNewsletters: 0
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   const features = [
     {
       icon: BookOpen,
-      title: "Latest Research & Publications",
-      description: "Stay updated with cutting-edge research papers, academic publications, and scholarly insights from our community."
+      title: "Research & Publications",
+      description: "Latest research papers, academic studies, and scholarly insights from our faculty and students.",
+      color: "bg-blue-50 text-blue-600"
     },
     {
       icon: Award,
-      title: "Community Achievements",
-      description: "Celebrate success stories, awards, recognitions, and milestones achieved by faculty and students."
+      title: "Achievements & Recognition",
+      description: "Celebrate success stories, awards, grants, and milestones achieved by our community.",
+      color: "bg-yellow-50 text-yellow-600"
     },
     {
       icon: Calendar,
       title: "Upcoming Events",
-      description: "Never miss important conferences, seminars, workshops, and academic events happening at Woxsen."
+      description: "Never miss conferences, seminars, workshops, and academic events at Woxsen University.",
+      color: "bg-purple-50 text-purple-600"
     },
     {
       icon: Lightbulb,
-      title: "Innovation Updates",
-      description: "Discover new patents, breakthrough innovations, and technological advances from our research labs."
+      title: "Patents & Innovation",
+      description: "Discover breakthrough innovations, patents, and technological advances from our labs.",
+      color: "bg-pink-50 text-pink-600"
     },
     {
-      icon: Users,
-      title: "Expert Insights",
-      description: "Read thought leadership articles and expert opinions from industry leaders and academic professionals."
+      icon: PenTool,
+      title: "Thought Leadership",
+      description: "Expert insights, opinion pieces, and industry analysis from our academic leaders.",
+      color: "bg-emerald-50 text-emerald-600"
     },
     {
-      icon: TrendingUp,
-      title: "Industry Trends",
-      description: "Stay ahead with the latest trends, market analysis, and industry developments across various sectors."
+      icon: Handshake,
+      title: "Industry Collaborations",
+      description: "Strategic partnerships, joint initiatives, and industry connections that drive innovation.",
+      color: "bg-cyan-50 text-cyan-600"
     }
   ];
 
@@ -43,52 +111,118 @@ const NewsletterLandingPage = () => {
     {
       name: "Dr. Sarah Johnson",
       role: "Professor, Computer Science",
-      image: "/images/testimonial-1.jpg",
-      quote: "The weekly digest keeps me connected with the latest research and developments across the university. It's an essential read!"
+      department: "School of Technology",
+      quote: "The weekly digest keeps me connected with all the amazing work happening across our university. It's my go-to source for staying updated!"
     },
     {
       name: "Prof. Michael Chen",
       role: "Head of Research",
-      image: "/images/testimonial-2.jpg",
+      department: "School of Business",
       quote: "I love how the newsletter highlights our community's achievements. It's inspiring to see the impact we're making together."
     },
     {
       name: "Dr. Priya Sharma",
       role: "Associate Professor",
-      image: "/images/testimonial-3.jpg",
-      quote: "The event notifications have helped me discover so many valuable conferences and workshops. Highly recommend subscribing!"
+      department: "School of Liberal Arts",
+      quote: "The event notifications have helped me discover valuable conferences and workshops. The content is always relevant and well-curated."
     }
   ];
 
-  const stats = [
-    { number: "5,000+", label: "Active Subscribers" },
-    { number: "200+", label: "Weekly Articles" },
-    { number: "50+", label: "Research Papers" },
-    { number: "95%", label: "Reader Satisfaction" }
+  const displayStats = [
+    { 
+      number: loading ? "..." : stats.totalSubscribers, 
+      label: "Active Subscribers",
+      icon: Users,
+      color: "text-blue-600"
+    },
+    { 
+      number: loading ? "..." : stats.weeklyContent, 
+      label: "Content Items",
+      icon: FileText,
+      color: "text-green-600"
+    },
+    { 
+      number: loading ? "..." : stats.recentNewsletters, 
+      label: "Newsletters Sent",
+      icon: Mail,
+      color: "text-purple-600"
+    },
+    { 
+      number: "100%", 
+      label: "Free Forever",
+      icon: CheckCircle,
+      color: "text-yellow-600"
+    }
   ];
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-blue-600 to-purple-700 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-r from-blue-600 to-purple-700 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              📰 Woxsen Insights
+            <h1 className="text-4xl md:text-5xl font-bold mb-6">
+              Woxsen University
               <span className="block text-2xl md:text-3xl font-normal mt-2 text-blue-100">
-                Weekly Newsletter
+                Insights Newsletter
               </span>
             </h1>
-            <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto">
-              Your weekly dose of innovation, research, and academic excellence. 
-              Stay connected with the pulse of knowledge and discovery.
+            <p className="text-xl md:text-2xl mb-8 text-blue-100 max-w-3xl mx-auto">
+              Your weekly connection to innovation, research, and academic excellence. 
+              Stay informed with the pulse of knowledge and discovery.
             </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a href="#subscribe">
+                <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+                  <Mail className="h-5 w-5 mr-2" />
+                  Subscribe Now - Free!
+                </Button>
+              </a>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-white text-white hover:bg-white hover:text-blue-600"
+                onClick={() => window.open('/api/newsletter/preview', '_blank')}
+              >
+                <Eye className="h-5 w-5 mr-2" />
+                View Sample Newsletter
+              </Button>
+            </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      {/* Hero Section with Subscription */}
-      <section className="py-16 bg-gray-50">
+      {/* Stats Section */}
+      <section className="py-12 bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {displayStats.map((stat, index) => {
+              const IconComponent = stat.icon;
+              return (
+                <div key={index} className="text-center">
+                  <div className="flex justify-center mb-4">
+                    <div className={`flex items-center justify-center w-12 h-12 bg-gray-100 rounded-lg`}>
+                      <IconComponent className={`h-6 w-6 ${stat.color}`} />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-gray-900 mb-1">{stat.number}</div>
+                  <div className="text-gray-600">{stat.label}</div>
+                </div>
+              );
+            })}
+          </div>
+          {stats.totalSubscribers === 0 && !loading && (
+            <div className="text-center mt-8">
+              <p className="text-gray-500 text-sm">We're just getting started! Be among the first to subscribe.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Subscription Section */}
+      <section id="subscribe" className="py-16 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -96,7 +230,7 @@ const NewsletterLandingPage = () => {
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Get curated content delivered to your inbox every Monday morning. 
-              Join thousands of researchers, faculty, and students staying ahead of the curve.
+              Be the first to know about research breakthroughs, achievements, and academic excellence.
             </p>
           </div>
 
@@ -107,36 +241,22 @@ const NewsletterLandingPage = () => {
               showPreferences={true}
               title=""
               description=""
-              className="shadow-xl border-2 border-blue-100"
+              className="shadow-xl border-2 border-blue-100 bg-white"
             />
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">
-                  {stat.number}
-                </div>
-                <div className="text-gray-600 font-medium">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-white">
+      <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               What You'll Get Every Week
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Our newsletter is carefully curated to bring you the most relevant and 
-              impactful content from the world of academics and research.
+              impactful content from across Woxsen University.
             </p>
           </div>
 
@@ -144,54 +264,56 @@ const NewsletterLandingPage = () => {
             {features.map((feature, index) => {
               const IconComponent = feature.icon;
               return (
-                <div key={index} className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
-                  <div className="flex items-center mb-4">
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                      <IconComponent className="h-6 w-6 text-blue-600" />
+                <Card key={index} className="group hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-center mb-4">
+                      <div className={`flex items-center justify-center w-12 h-12 rounded-lg ${feature.color}`}>
+                        <IconComponent className="h-6 w-6" />
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 ml-4">{feature.title}</h3>
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900">{feature.title}</h3>
-                  </div>
-                  <p className="text-gray-600 leading-relaxed">{feature.description}</p>
-                </div>
+                    <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
         </div>
       </section>
 
-      {/* Sample Newsletter Preview */}
-      <section className="py-20 bg-gradient-to-br from-blue-50 to-purple-50">
+      {/* Newsletter Preview */}
+      <section className="py-16 bg-gradient-to-br from-blue-50 to-purple-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              See What Our Newsletter Looks Like
+              Professional Design, Packed with Value
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Professional design, mobile-friendly, and packed with valuable content.
+              Mobile-friendly design with easy-to-read content that respects your time.
             </p>
           </div>
 
           <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
             <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white p-8 text-center">
               <h3 className="text-2xl font-bold mb-2">📰 WOXSEN INSIGHTS</h3>
-              <p className="text-blue-100">Weekly Digest • Nov 4 - Nov 10</p>
+              <p className="text-blue-100">Weekly Digest • Coming Soon</p>
             </div>
             
             <div className="p-8">
               {/* Sample Article */}
               <div className="mb-8">
                 <div className="bg-gray-200 rounded-lg h-48 mb-4 flex items-center justify-center">
-                  <span className="text-gray-500">Featured Article Image</span>
+                  <span className="text-gray-500">Featured Content Preview</span>
                 </div>
                 <h4 className="text-2xl font-bold text-gray-900 mb-2">
-                  Revolutionary AI Research Breakthrough at Woxsen Labs
+                  Weekly Highlights from Woxsen University
                 </h4>
                 <p className="text-gray-600 mb-4">
-                  Our research team has developed a groundbreaking machine learning algorithm 
-                  that could transform how we approach data analysis in healthcare...
+                  Stay updated with the latest research, achievements, events, and innovations 
+                  from our vibrant academic community. Each newsletter brings you curated content...
                 </p>
                 <div className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold">
-                  READ MORE
+                  READ FULL ARTICLE
                 </div>
               </div>
 
@@ -200,19 +322,19 @@ const NewsletterLandingPage = () => {
                 <h4 className="font-bold text-gray-900 mb-4">This Week's Highlights</h4>
                 <div className="grid grid-cols-4 gap-4 text-center">
                   <div>
-                    <div className="text-2xl font-bold text-blue-600">8</div>
+                    <div className="text-2xl font-bold text-blue-600">{loading ? "..." : stats.weeklyContent || "Soon"}</div>
                     <div className="text-sm text-gray-600">New Articles</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-blue-600">3</div>
+                    <div className="text-2xl font-bold text-green-600">Coming</div>
                     <div className="text-sm text-gray-600">Research Papers</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-blue-600">12</div>
+                    <div className="text-2xl font-bold text-purple-600">Soon</div>
                     <div className="text-sm text-gray-600">Achievements</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-blue-600">5</div>
+                    <div className="text-2xl font-bold text-yellow-600">Weekly</div>
                     <div className="text-sm text-gray-600">Events</div>
                   </div>
                 </div>
@@ -221,158 +343,125 @@ const NewsletterLandingPage = () => {
           </div>
 
           <div className="text-center mt-8">
-            <button 
+            <Button 
               onClick={() => window.open('/api/newsletter/preview', '_blank')}
-              className="bg-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+              size="lg"
+              className="bg-purple-600 hover:bg-purple-700"
             >
+              <Eye className="h-5 w-5 mr-2" />
               View Full Sample Newsletter
-            </button>
+            </Button>
           </div>
         </div>
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-white">
+      <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              What Our Subscribers Say
+              What Our Community Says
             </h2>
             <p className="text-lg text-gray-600">
-              Join the community of satisfied readers who never miss an update.
+              Join the community that never misses an update from Woxsen University.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-gray-50 p-8 rounded-xl">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-gray-300 rounded-full mr-4 flex items-center justify-center">
-                    <span className="text-gray-600 font-bold">
-                      {testimonial.name.split(' ').map(n => n[0]).join('')}
-                    </span>
+              <Card key={index} className="hover:shadow-lg transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center mb-4">
+                    <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mr-4">
+                      <span className="text-blue-600 font-bold">
+                        {testimonial.name.split(' ').map(n => n[0]).join('')}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="font-bold text-gray-900">{testimonial.name}</div>
+                      <div className="text-sm text-gray-600">{testimonial.role}</div>
+                      <div className="text-xs text-gray-500">{testimonial.department}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-bold text-gray-900">{testimonial.name}</div>
-                    <div className="text-sm text-gray-600">{testimonial.role}</div>
-                  </div>
-                </div>
-                <p className="text-gray-700 italic">"{testimonial.quote}"</p>
-              </div>
+                  <p className="text-gray-700 italic">"{testimonial.quote}"</p>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-16 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Frequently Asked Questions
             </h2>
           </div>
 
-          <div className="space-y-8">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                How often will I receive the newsletter?
-              </h3>
-              <p className="text-gray-600">
-                Our newsletter is sent every Monday morning with a comprehensive digest 
-                of the week's most important updates, research, and events.
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                Can I customize what content I receive?
-              </h3>
-              <p className="text-gray-600">
-                Yes! When you subscribe, you can choose your preferences for different 
-                types of content including research papers, achievements, events, and more.
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                Is the newsletter free?
-              </h3>
-              <p className="text-gray-600">
-                Absolutely! Our newsletter is completely free and will always remain so. 
-                We believe in making knowledge accessible to everyone.
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                How can I unsubscribe?
-              </h3>
-              <p className="text-gray-600">
-                You can unsubscribe at any time by clicking the unsubscribe link in any 
-                email you receive from us. No questions asked!
-              </p>
-            </div>
+          <div className="space-y-6">
+            {[
+              {
+                question: "How often will I receive the newsletter?",
+                answer: "Our newsletter is sent every Monday morning with a comprehensive digest of the week's most important updates, research, and events from Woxsen University."
+              },
+              {
+                question: "Can I customize what content I receive?",
+                answer: "Yes! When you subscribe, you can choose your preferences for different types of content including research papers, achievements, events, patents, and more."
+              },
+              {
+                question: "Is the newsletter free?",
+                answer: "Absolutely! Our newsletter is completely free and will always remain so. We believe in making knowledge accessible to everyone in our community."
+              },
+              {
+                question: "How can I unsubscribe?",
+                answer: "You can unsubscribe at any time by clicking the unsubscribe link in any email you receive from us. No questions asked!"
+              }
+            ].map((faq, index) => (
+              <Card key={index}>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">
+                    {faq.question}
+                  </h3>
+                  <p className="text-gray-600">
+                    {faq.answer}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-700">
+      <section className="py-16 bg-gray-900 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Ready to Stay Informed?
           </h2>
-          <p className="text-xl text-blue-100 mb-8">
-            Join thousands of academics, researchers, and innovators who trust 
-            Woxsen Insights to keep them updated.
+          <p className="text-xl text-gray-300 mb-8">
+            Be among the first to receive insights from Woxsen University. 
+            Join our community and never miss important updates.
           </p>
-          <a 
-            href="#subscribe" 
-            className="bg-white text-blue-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors inline-block"
-            onClick={(e) => {
-              e.preventDefault();
-              document.querySelector('.email-container').scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            Subscribe Now - It's Free! 🚀
-          </a>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="#subscribe">
+              <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+                <Mail className="h-5 w-5 mr-2" />
+                Subscribe Now - It's Free!
+              </Button>
+            </a>
+            <Link href="/auth/register">
+              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-gray-900">
+                <ArrowRight className="h-5 w-5 mr-2" />
+                Join Our Community
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="text-lg font-bold mb-4">Woxsen Insights</h3>
-              <p className="text-gray-400">
-                Driving innovation through knowledge sharing and community building.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold mb-4">Quick Links</h3>
-              <div className="space-y-2">
-                <a href="/" className="text-gray-400 hover:text-white block">Home</a>
-                <a href="/blog" className="text-gray-400 hover:text-white block">Blog</a>
-                <a href="/research" className="text-gray-400 hover:text-white block">Research</a>
-                <a href="/events" className="text-gray-400 hover:text-white block">Events</a>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold mb-4">Contact</h3>
-              <div className="text-gray-400 space-y-2">
-                <p>insights@woxsen.edu.in</p>
-                <p>Woxsen University</p>
-                <p>Hyderabad, India</p>
-              </div>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 Woxsen University. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
