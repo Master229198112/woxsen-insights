@@ -1,8 +1,10 @@
 'use client';
+import AIContentRenderer from '../AIContentRenderer';
 
 const BlogContent = ({ content }) => {
   return (
-    <div 
+    <AIContentRenderer
+      content={content}
       className="prose prose-lg max-w-none
         prose-headings:text-gray-900 prose-headings:font-bold
         prose-h1:text-3xl prose-h1:mb-6 prose-h1:mt-8
@@ -19,7 +21,6 @@ const BlogContent = ({ content }) => {
         prose-img:rounded-lg prose-img:shadow-md prose-img:my-6
         prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
         prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:rounded-lg prose-pre:p-4"
-      dangerouslySetInnerHTML={{ __html: content }}
     />
   );
 };

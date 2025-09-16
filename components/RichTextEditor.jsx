@@ -469,7 +469,7 @@ const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." })
     if (lastInsertedImage) {
       const timer = setTimeout(() => {
         setLastInsertedImage(null);
-      }, 10000); // Clear after 10 seconds
+      }, 5000); // Clear after 5 seconds
       return () => clearTimeout(timer);
     }
   }, [lastInsertedImage]);
