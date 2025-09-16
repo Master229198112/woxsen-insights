@@ -1,11 +1,11 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import SmartImageWithAI from '@/components/ui/SmartImageWithAI';
 import { 
   Search, 
   Filter, 
@@ -84,11 +84,15 @@ export default function CategoryContent({ data, info, searchParams }) {
             {data.featuredPosts.map((post) => (
               <Card key={post._id} className="group hover:shadow-lg transition-shadow overflow-hidden">
                 <div className="relative h-40">
-                  <Image
+                  <SmartImageWithAI
                     src={post.featuredImage}
                     alt={post.title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    imageAnalysis={post.imageAnalysis}
+                    variant="card"
+                    className="w-full h-full group-hover:scale-105 transition-transform duration-300"
+                    aiLabelPosition="bottom-right"
+                    aiLabelSize="small"
+                    showAILabel={true}
                   />
                   <div className="absolute top-3 left-3">
                     <span className="inline-flex items-center px-2 py-1 text-xs font-semibold text-white bg-yellow-600 rounded">
@@ -242,11 +246,15 @@ export default function CategoryContent({ data, info, searchParams }) {
               <Card key={post._id} className="group hover:shadow-lg transition-shadow overflow-hidden">
                 <Link href={`/blog/${post.slug || post._id}`}>
                   <div className="relative h-48">
-                    <Image
+                    <SmartImageWithAI
                       src={post.featuredImage}
                       alt={post.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      imageAnalysis={post.imageAnalysis}
+                      variant="card"
+                      className="w-full h-full group-hover:scale-105 transition-transform duration-300"
+                      aiLabelPosition="bottom-right"
+                      aiLabelSize="small"
+                      showAILabel={true}
                     />
                   </div>
                   <CardContent className="p-6">

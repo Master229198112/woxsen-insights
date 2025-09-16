@@ -6,7 +6,7 @@ import Footer from '@/components/layout/Footer';
 import BlogComments from '@/components/blog/BlogComments';
 import BlogSidebar from '@/components/blog/BlogSidebar';
 import ShareButtons from '@/components/blog/ShareButtons';
-import SmartImage from '@/components/ui/SmartImage';
+import SmartImageWithAI from '@/components/ui/SmartImageWithAI';
 import AuthorLink from '@/components/ui/AuthorLink';
 import CategoryBasedDisplay from '@/components/blog/displays/CategoryBasedDisplay';
 import { 
@@ -161,12 +161,15 @@ export default async function BlogDetailPage({ params }) {
 
               {/* Featured Image */}
               <div className="mb-8">
-                <SmartImage
+                <SmartImageWithAI
                   src={blog.featuredImage}
                   alt={blog.title}
+                  imageAnalysis={blog.imageAnalysis}
                   priority
                   naturalSize={true}
                   className="w-full"
+                  aiLabelPosition="bottom-left"
+                  showAILabel={true}
                 />
               </div>
 

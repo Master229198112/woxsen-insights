@@ -1,8 +1,8 @@
 'use client';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import SmartImageWithAI from '@/components/ui/SmartImageWithAI';
 import { Calendar, Eye, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
@@ -119,11 +119,15 @@ const BlogSidebar = ({ relatedBlogs, currentCategory }) => {
                 >
                   <div className="flex space-x-3">
                     <div className="w-16 h-12 relative rounded overflow-hidden flex-shrink-0">
-                      <Image
+                      <SmartImageWithAI
                         src={blog.featuredImage}
                         alt={blog.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform"
+                        imageAnalysis={blog.imageAnalysis}
+                        variant="thumbnail"
+                        className="w-full h-full group-hover:scale-105 transition-transform"
+                        aiLabelPosition="bottom-right"
+                        aiLabelSize="small"
+                        showAILabel={true}
                       />
                     </div>
                     <div className="flex-1">

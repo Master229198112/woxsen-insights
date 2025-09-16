@@ -107,6 +107,7 @@ export async function POST(request) {
       category: category,
       tags: postData.tags || [],
       featuredImage: postData.featuredImage,
+      imageAnalysis: postData.imageAnalysis || null, // Store AI analysis data
       slug: uniqueSlug, // Explicitly set the slug
       status: 'pending' // All posts start as pending review
     });

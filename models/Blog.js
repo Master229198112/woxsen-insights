@@ -46,6 +46,15 @@ const blogSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Featured image is required'],
   },
+  imageAnalysis: {
+    isAI: { type: Boolean, default: false },
+    confidence: { type: Number, default: 0 },
+    type: { type: String, default: 'authentic' }, // 'authentic', 'generated', 'enhanced', 'suspicious'
+    generator: { type: String, default: null }, // 'ChatGPT', 'Midjourney', etc.
+    indicators: [{ type: String }],
+    metadata: { type: mongoose.Schema.Types.Mixed },
+    analyzedAt: { type: Date, default: Date.now }
+  },
   status: {
     type: String,
     enum: ['draft', 'pending', 'approved', 'published', 'rejected'],
@@ -262,6 +271,7 @@ blogSchema.index({ status: 1, publishedAt: -1 });
 blogSchema.index({ category: 1, status: 1 });
 blogSchema.index({ author: 1 });
 blogSchema.index({ tags: 1 });
+blogSchema.index({ 'imageAnalysis.isAI': 1 }); // Index for AI detection queries
 // REMOVED: blogSchema.index({ slug: 1 }, { unique: true }); 
 // The slug index is already created by the "unique: true" in the schema definition
 
