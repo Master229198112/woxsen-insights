@@ -135,7 +135,7 @@ export async function POST(request) {
 
     for (const subscriberData of subscribers) {
       try {
-        const { email, preferences = {}, source = 'import' } = subscriberData;
+        const { email, preferences = {}, source = 'csv-import' } = subscriberData;
 
         // Validate email
         if (!email || !emailRegex.test(email)) {

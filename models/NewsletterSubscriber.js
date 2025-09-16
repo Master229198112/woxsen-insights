@@ -49,7 +49,7 @@ const newsletterSubscriberSchema = new mongoose.Schema({
   },
   source: {
     type: String,
-    enum: ['blog-sidebar', 'footer', 'homepage', 'manual'],
+    enum: ['blog-sidebar', 'footer', 'homepage', 'manual', 'import', 'csv-import', 'bulk-import', 'admin-import'],
     default: 'blog-sidebar'
   },
   metadata: {
