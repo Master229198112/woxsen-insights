@@ -179,33 +179,79 @@ const ResearchForm = ({ data, onChange, errors = [] }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Paper Type *
             </label>
-            <div className="grid grid-cols-2 gap-4">
-              <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                 <input
                   type="radio"
                   name="paperType"
                   value="research"
                   checked={formData.paperType === 'research'}
                   onChange={(e) => handleInputChange('paperType', e.target.value)}
-                  className="mr-2"
+                  className="mr-3"
                 />
                 <div>
                   <div className="font-medium">Research Paper</div>
                   <div className="text-sm text-gray-500">Original research findings</div>
                 </div>
               </label>
-              <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+              
+              <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                 <input
                   type="radio"
                   name="paperType"
                   value="review"
                   checked={formData.paperType === 'review'}
                   onChange={(e) => handleInputChange('paperType', e.target.value)}
-                  className="mr-2"
+                  className="mr-3"
                 />
                 <div>
                   <div className="font-medium">Review Paper</div>
                   <div className="text-sm text-gray-500">Literature review or survey</div>
+                </div>
+              </label>
+              
+              <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="paperType"
+                  value="book"
+                  checked={formData.paperType === 'book'}
+                  onChange={(e) => handleInputChange('paperType', e.target.value)}
+                  className="mr-3"
+                />
+                <div>
+                  <div className="font-medium">Book</div>
+                  <div className="text-sm text-gray-500">Complete published book</div>
+                </div>
+              </label>
+              
+              <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="paperType"
+                  value="book-chapter"
+                  checked={formData.paperType === 'book-chapter'}
+                  onChange={(e) => handleInputChange('paperType', e.target.value)}
+                  className="mr-3"
+                />
+                <div>
+                  <div className="font-medium">Book Chapter</div>
+                  <div className="text-sm text-gray-500">Chapter in edited book</div>
+                </div>
+              </label>
+              
+              <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="paperType"
+                  value="case-study"
+                  checked={formData.paperType === 'case-study'}
+                  onChange={(e) => handleInputChange('paperType', e.target.value)}
+                  className="mr-3"
+                />
+                <div>
+                  <div className="font-medium">Case Study</div>
+                  <div className="text-sm text-gray-500">Business or research case</div>
                 </div>
               </label>
             </div>
@@ -320,16 +366,25 @@ const ResearchForm = ({ data, onChange, errors = [] }) => {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Journal */}
+            {/* Publication Source */}
             <div className="md:col-span-2">
               <label htmlFor="journal" className="block text-sm font-medium text-gray-700 mb-2">
-                Journal/Conference Name *
+                Publication Source *
+                <span className="text-sm text-gray-500 font-normal ml-1">
+                  ({formData.paperType === 'book' ? 'Publisher' : 
+                    formData.paperType === 'book-chapter' ? 'Book Title' :
+                    'Journal/Conference Name'})
+                </span>
               </label>
               <Input
                 id="journal"
                 value={formData.journal}
                 onChange={(e) => handleInputChange('journal', e.target.value)}
-                placeholder="e.g., Nature, IEEE Transactions on..."
+                placeholder={
+                  formData.paperType === 'book' ? 'e.g., Springer, Wiley, McGraw Hill...' :
+                  formData.paperType === 'book-chapter' ? 'e.g., Handbook of Business Analytics...' :
+                  'e.g., Nature, IEEE Transactions on...'
+                }
                 className="w-full"
               />
               {getFieldError('journal') && (
@@ -341,12 +396,19 @@ const ResearchForm = ({ data, onChange, errors = [] }) => {
             <div>
               <label htmlFor="volume" className="block text-sm font-medium text-gray-700 mb-2">
                 Volume
+                {(formData.paperType === 'book' || formData.paperType === 'book-chapter') && (
+                  <span className="text-sm text-gray-500 font-normal ml-1">(if applicable)</span>
+                )}
               </label>
               <Input
                 id="volume"
                 value={formData.volume}
                 onChange={(e) => handleInputChange('volume', e.target.value)}
-                placeholder="e.g., 15"
+                placeholder={
+                  formData.paperType === 'book' ? 'e.g., Volume 2 (for multi-volume works)' :
+                  formData.paperType === 'book-chapter' ? 'e.g., Volume 1 (if book has volumes)' :
+                  'e.g., 15'
+                }
               />
             </div>
 
@@ -354,12 +416,18 @@ const ResearchForm = ({ data, onChange, errors = [] }) => {
             <div>
               <label htmlFor="issue" className="block text-sm font-medium text-gray-700 mb-2">
                 Issue
+                {(formData.paperType === 'book' || formData.paperType === 'book-chapter') && (
+                  <span className="text-sm text-gray-500 font-normal ml-1">(usually not applicable)</span>
+                )}
               </label>
               <Input
                 id="issue"
                 value={formData.issue}
                 onChange={(e) => handleInputChange('issue', e.target.value)}
-                placeholder="e.g., 3"
+                placeholder={
+                  formData.paperType === 'book' || formData.paperType === 'book-chapter' ? 
+                  'N/A for books' : 'e.g., 3'
+                }
               />
             </div>
 
@@ -367,12 +435,21 @@ const ResearchForm = ({ data, onChange, errors = [] }) => {
             <div>
               <label htmlFor="pages" className="block text-sm font-medium text-gray-700 mb-2">
                 Pages
+                <span className="text-sm text-gray-500 font-normal ml-1">
+                  ({formData.paperType === 'book' ? 'Total pages or page range' : 
+                    formData.paperType === 'book-chapter' ? 'Chapter pages' :
+                    'Article pages'})
+                </span>
               </label>
               <Input
                 id="pages"
                 value={formData.pages}
                 onChange={(e) => handleInputChange('pages', e.target.value)}
-                placeholder="e.g., 123-145"
+                placeholder={
+                  formData.paperType === 'book' ? 'e.g., 1-300 or 300 pages' :
+                  formData.paperType === 'book-chapter' ? 'e.g., 45-67' :
+                  'e.g., 123-145'
+                }
               />
             </div>
 

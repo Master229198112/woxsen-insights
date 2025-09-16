@@ -20,8 +20,44 @@ const ResearchDisplay = ({ blog }) => {
     return <div className="text-gray-500 p-8">Research data not available</div>;
   }
 
+  const getPaperTypeLabel = (paperType) => {
+    switch (paperType) {
+      case 'research': return 'Research Paper';
+      case 'review': return 'Review Paper';
+      case 'book': return 'Book';
+      case 'book-chapter': return 'Book Chapter';
+      case 'case-study': return 'Case Study';
+      default: return 'Publication';
+    }
+  };
+
+  const getPaperTypeColor = (paperType) => {
+    switch (paperType) {
+      case 'research': return 'bg-blue-100 text-blue-800';
+      case 'review': return 'bg-green-100 text-green-800';
+      case 'book': return 'bg-purple-100 text-purple-800';
+      case 'book-chapter': return 'bg-indigo-100 text-indigo-800';
+      case 'case-study': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
     <div className="space-y-8">
+      {/* Paper Type Badge */}
+      {researchData.paperType && (
+        <div className="flex items-center space-x-2">
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getPaperTypeColor(researchData.paperType)}`}>
+            {getPaperTypeLabel(researchData.paperType)}
+          </span>
+          {researchData.researchType && researchData.researchType !== 'experimental' && (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+              {researchData.researchType.replace('-', ' ')}
+            </span>
+          )}
+        </div>
+      )}
+      
       {/* Abstract */}
       {researchData.abstract && (
         <Card>
@@ -51,7 +87,11 @@ const ResearchDisplay = ({ blog }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {researchData.journal && (
               <div>
-                <dt className="font-semibold text-gray-900 mb-1">Journal</dt>
+                <dt className="font-semibold text-gray-900 mb-1">
+                  {blog.researchData?.paperType === 'book' ? 'Publisher' : 
+                   blog.researchData?.paperType === 'book-chapter' ? 'Book Title' :
+                   'Journal/Conference'}
+                </dt>
                 <dd className="text-gray-700">{researchData.journal}</dd>
               </div>
             )}

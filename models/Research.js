@@ -11,7 +11,7 @@ const researchSchema = new mongoose.Schema({
   // Paper Details
   paperType: { 
     type: String, 
-    enum: ['research', 'review'], 
+    enum: ['research', 'review', 'book', 'book-chapter', 'case-study'], 
     required: true 
   },
   abstract: { 
