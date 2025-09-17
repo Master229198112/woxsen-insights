@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { GraduationCap, Mail, MapPin, Phone, ArrowUp } from 'lucide-react';
 
@@ -52,8 +53,13 @@ export default function Footer() {
           {/* Logo & Description */}
           <div className="md:col-span-5">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-lg">
-                <GraduationCap className="h-6 w-6 text-white" />
+              <div className="relative w-18 h-10 flex-shrink-0">
+                <Image
+                  src="/Woxsen-University.jpg"
+                  alt="Woxsen University Logo"
+                  fill
+                  className="object-cover rounded-lg"
+                />
               </div>
               <div>
                 <div className="text-xl font-bold">Woxsen Insights</div>

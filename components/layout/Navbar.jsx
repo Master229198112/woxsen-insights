@@ -2,9 +2,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import LoadingBar from '@/components/ui/LoadingBar';
 import { 
   GraduationCap, 
   PenTool, 
@@ -110,22 +112,29 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <>
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-lg">
-              <GraduationCap className="h-6 w-6 text-white" />
+          {/* Logo - More responsive */}
+          <Link href="/" className="flex items-center space-x-2 flex-shrink-0">
+            <div className="relative w-16 h-10 flex-shrink-0">
+              <Image
+                src="/Woxsen-University.jpg"
+                alt="Woxsen University Logo"
+                fill
+                className="object-contain rounded-lg"
+                priority
+              />
             </div>
-            <div>
+            <div className="hidden sm:block">
               <div className="text-xl font-bold text-gray-900">Woxsen Insights</div>
               <div className="text-xs text-gray-500">School of Business</div>
             </div>
           </Link>
 
-          {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center space-x-8">
+          {/* Desktop Navigation Links - More compact */}
+          <div className="hidden md:flex items-center space-x-4 lg:space-x-8 flex-1 justify-center">
             <Link 
               href="/" 
               className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
@@ -168,50 +177,54 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Desktop User Actions */}
+            {/* Desktop User Actions - Compact */}
             {status === 'loading' ? (
               <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
             ) : session ? (
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 lg:space-x-4 flex-shrink-0">
                 <Link href="/dashboard">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="hidden lg:flex">
                     Dashboard
                   </Button>
                 </Link>
                 
                 <Link href="/dashboard/create">
                   <Button size="sm" className="flex items-center">
-                    <PenTool className="h-4 w-4 mr-2" />
-                    Write
+                    <PenTool className="h-4 w-4 lg:mr-2" />
+                    <span className="hidden lg:inline">Write</span>
                   </Button>
                 </Link>
 
                 {session.user.role === 'admin' && (
                   <Link href="/admin">
                     <Button variant="outline" size="sm" className="flex items-center">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Admin
+                      <Settings className="h-4 w-4 lg:mr-2" />
+                      <span className="hidden lg:inline">Admin</span>
                     </Button>
                   </Link>
                 )}
 
                 <NotificationBell />
 
-                <div className="flex items-center space-x-2">
-                  <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">
+                <div className="flex items-center space-x-2 flex-shrink-0">
+                  <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full flex-shrink-0">
                     <span className="text-sm font-medium text-blue-600">
                       {session.user.name.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <div className="text-sm">
-                    <div className="font-medium text-gray-900">{session.user.name}</div>
-                    <div className="text-gray-500">{session.user.department}</div>
+                  <div className="text-sm min-w-0 flex-1 hidden lg:block">
+                    <div className="font-medium text-gray-900 truncate max-w-32">
+                      {session.user.name}
+                    </div>
+                    <div className="text-gray-500 truncate max-w-32">
+                      {session.user.department}
+                    </div>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleSignOut}
-                    className="flex items-center text-gray-500 hover:text-red-600"
+                    className="flex items-center text-gray-500 hover:text-red-600 flex-shrink-0"
                   >
                     <LogOut className="h-4 w-4" />
                   </Button>
@@ -368,6 +381,10 @@ export default function Navbar() {
           </div>
         )}
       </div>
-    </nav>
+      </nav>
+      
+      {/* Loading Bar */}
+      <LoadingBar />
+    </>
   );
 }
