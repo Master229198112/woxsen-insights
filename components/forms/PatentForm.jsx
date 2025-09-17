@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -103,6 +103,26 @@ const PatentForm = ({ data, onChange, errors = [] }) => {
       });
     }
   };
+
+  // Function to fix existing data types
+  const fixDataTypes = () => {
+    const updatedInventors = formData.inventors.map(inventor => ({
+      ...inventor,
+      contributionPercentage: typeof inventor.contributionPercentage === 'string' && inventor.contributionPercentage !== '' 
+        ? Number(inventor.contributionPercentage) 
+        : inventor.contributionPercentage
+    }));
+    
+    if (JSON.stringify(updatedInventors) !== JSON.stringify(formData.inventors)) {
+      const updatedData = { ...formData, inventors: updatedInventors };
+      onChange(updatedData);
+    }
+  };
+
+  // Fix data types on component mount and when data changes
+  React.useEffect(() => {
+    fixDataTypes();
+  }, []);
 
   const removeInventor = (index) => {
     const updatedData = {
@@ -474,7 +494,10 @@ const PatentForm = ({ data, onChange, errors = [] }) => {
                     <div>
                       <Input
                         value={inventor.contributionPercentage}
-                        onChange={(e) => updateInventor(index, 'contributionPercentage', e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? '' : Number(e.target.value);
+                          updateInventor(index, 'contributionPercentage', value);
+                        }}
                         placeholder="Contribution %"
                         type="number"
                         min="0"
@@ -528,7 +551,10 @@ const PatentForm = ({ data, onChange, errors = [] }) => {
               <div>
                 <Input
                   value={newInventor.contributionPercentage}
-                  onChange={(e) => setNewInventor(prev => ({ ...prev, contributionPercentage: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? '' : Number(e.target.value);
+                    setNewInventor(prev => ({ ...prev, contributionPercentage: value }));
+                  }}
                   placeholder="Contribution %"
                   type="number"
                   min="0"
