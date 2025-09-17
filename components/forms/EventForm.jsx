@@ -528,6 +528,45 @@ const EventForm = ({ data, onChange, errors = [] }) => {
                   </div>
                 </div>
               </div>
+
+              {/* Coordinates (Optional) */}
+              <div>
+                <h4 className="font-medium text-gray-900 mb-3">Coordinates (Optional)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="latitude" className="block text-sm font-medium text-gray-700 mb-2">
+                      Latitude
+                    </label>
+                    <Input
+                      id="latitude"
+                      type="number"
+                      step="0.0001"
+                      value={formData.location.coordinates.latitude}
+                      onChange={(e) => {
+                        const value = e.target.value === '' ? '' : Number(e.target.value);
+                        handleDeeplyNestedInputChange('location', 'coordinates', 'latitude', value);
+                      }}
+                      placeholder="e.g., 17.2403"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="longitude" className="block text-sm font-medium text-gray-700 mb-2">
+                      Longitude
+                    </label>
+                    <Input
+                      id="longitude"
+                      type="number"
+                      step="0.0001"
+                      value={formData.location.coordinates.longitude}
+                      onChange={(e) => {
+                        const value = e.target.value === '' ? '' : Number(e.target.value);
+                        handleDeeplyNestedInputChange('location', 'coordinates', 'longitude', value);
+                      }}
+                      placeholder="e.g., 78.4294"
+                    />
+                  </div>
+                </div>
+              </div>
             </>
           )}
 
@@ -935,7 +974,7 @@ const EventForm = ({ data, onChange, errors = [] }) => {
 
               <Button type="button" onClick={addSpeaker} disabled={!newSpeaker.name.trim()}>
                 <Plus className="h-4 w-4 mr-1" />
-                Add Speaker
+                Click to Add Speaker after filling
               </Button>
             </div>
           </div>
@@ -1038,40 +1077,60 @@ const EventForm = ({ data, onChange, errors = [] }) => {
 
           {/* Post-event fields */}
           {formData.eventStatus === 'completed' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="actualAttendees" className="block text-sm font-medium text-gray-700 mb-2">
-                  Actual Attendees
-                </label>
-                <Input
-                  id="actualAttendees"
-                  type="number"
-                  value={formData.attendance.actualAttendees}
-                  onChange={(e) => {
-                    const value = e.target.value === '' ? '' : Number(e.target.value);
-                    handleNestedInputChange('attendance', 'actualAttendees', value);
-                  }}
-                  placeholder="85"
-                  min="0"
-                />
-              </div>
-              <div>
-                <label htmlFor="averageRating" className="block text-sm font-medium text-gray-700 mb-2">
-                  Average Rating (1-5)
-                </label>
-                <Input
-                  id="averageRating"
-                  type="number"
-                  step="0.1"
-                  min="1"
-                  max="5"
-                  value={formData.attendance.averageRating}
-                  onChange={(e) => {
-                    const value = e.target.value === '' ? '' : Number(e.target.value);
-                    handleNestedInputChange('attendance', 'averageRating', value);
-                  }}
-                  placeholder="4.5"
-                />
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label htmlFor="actualAttendees" className="block text-sm font-medium text-gray-700 mb-2">
+                    Actual Attendees
+                  </label>
+                  <Input
+                    id="actualAttendees"
+                    type="number"
+                    value={formData.attendance.actualAttendees}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? '' : Number(e.target.value);
+                      handleNestedInputChange('attendance', 'actualAttendees', value);
+                    }}
+                    placeholder="85"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="attendanceRate" className="block text-sm font-medium text-gray-700 mb-2">
+                    Attendance Rate (%)
+                  </label>
+                  <Input
+                    id="attendanceRate"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={formData.attendance.attendanceRate}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? '' : Number(e.target.value);
+                      handleNestedInputChange('attendance', 'attendanceRate', value);
+                    }}
+                    placeholder="85.5"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="averageRating" className="block text-sm font-medium text-gray-700 mb-2">
+                    Average Rating (1-5)
+                  </label>
+                  <Input
+                    id="averageRating"
+                    type="number"
+                    step="0.1"
+                    min="1"
+                    max="5"
+                    value={formData.attendance.averageRating}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? '' : Number(e.target.value);
+                      handleNestedInputChange('attendance', 'averageRating', value);
+                    }}
+                    placeholder="4.5"
+                  />
+                </div>
               </div>
             </div>
           )}
