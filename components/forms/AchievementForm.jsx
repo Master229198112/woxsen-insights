@@ -502,7 +502,10 @@ const AchievementForm = ({ data, onChange, errors = [] }) => {
                 id="totalApplicants"
                 type="number"
                 value={formData.selectionProcess.totalApplicants}
-                onChange={(e) => handleNestedInputChange('selectionProcess', 'totalApplicants', parseInt(e.target.value) || '')}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? '' : Number(e.target.value);
+                  handleNestedInputChange('selectionProcess', 'totalApplicants', value);
+                }}
                 placeholder="100"
                 min="0"
               />
@@ -517,7 +520,10 @@ const AchievementForm = ({ data, onChange, errors = [] }) => {
                 id="totalWinners"
                 type="number"
                 value={formData.selectionProcess.totalWinners}
-                onChange={(e) => handleNestedInputChange('selectionProcess', 'totalWinners', parseInt(e.target.value) || '')}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? '' : Number(e.target.value);
+                  handleNestedInputChange('selectionProcess', 'totalWinners', value);
+                }}
                 placeholder="5"
                 min="0"
               />
@@ -545,7 +551,10 @@ const AchievementForm = ({ data, onChange, errors = [] }) => {
                 id="amount"
                 type="number"
                 value={formData.monetaryValue.amount}
-                onChange={(e) => handleNestedInputChange('monetaryValue', 'amount', parseFloat(e.target.value) || '')}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? '' : Number(e.target.value);
+                  handleNestedInputChange('monetaryValue', 'amount', value);
+                }}
                 placeholder="10000"
                 min="0"
               />

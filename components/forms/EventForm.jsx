@@ -764,7 +764,10 @@ const EventForm = ({ data, onChange, errors = [] }) => {
                     id="registrationFee"
                     type="number"
                     value={formData.registration.registrationFee.amount}
-                    onChange={(e) => handleDeeplyNestedInputChange('registration', 'registrationFee', 'amount', parseFloat(e.target.value) || '')}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? '' : Number(e.target.value);
+                      handleDeeplyNestedInputChange('registration', 'registrationFee', 'amount', value);
+                    }}
                     placeholder="0"
                     min="0"
                   />
@@ -793,7 +796,10 @@ const EventForm = ({ data, onChange, errors = [] }) => {
                     id="maxParticipants"
                     type="number"
                     value={formData.registration.maxParticipants}
-                    onChange={(e) => handleNestedInputChange('registration', 'maxParticipants', parseInt(e.target.value) || '')}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? '' : Number(e.target.value);
+                      handleNestedInputChange('registration', 'maxParticipants', value);
+                    }}
                     placeholder="100"
                     min="1"
                   />
@@ -1020,7 +1026,10 @@ const EventForm = ({ data, onChange, errors = [] }) => {
                 id="expectedAttendees"
                 type="number"
                 value={formData.attendance.expectedAttendees}
-                onChange={(e) => handleNestedInputChange('attendance', 'expectedAttendees', parseInt(e.target.value) || '')}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? '' : Number(e.target.value);
+                  handleNestedInputChange('attendance', 'expectedAttendees', value);
+                }}
                 placeholder="100"
                 min="0"
               />
@@ -1038,7 +1047,10 @@ const EventForm = ({ data, onChange, errors = [] }) => {
                   id="actualAttendees"
                   type="number"
                   value={formData.attendance.actualAttendees}
-                  onChange={(e) => handleNestedInputChange('attendance', 'actualAttendees', parseInt(e.target.value) || '')}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? '' : Number(e.target.value);
+                    handleNestedInputChange('attendance', 'actualAttendees', value);
+                  }}
                   placeholder="85"
                   min="0"
                 />
@@ -1054,7 +1066,10 @@ const EventForm = ({ data, onChange, errors = [] }) => {
                   min="1"
                   max="5"
                   value={formData.attendance.averageRating}
-                  onChange={(e) => handleNestedInputChange('attendance', 'averageRating', parseFloat(e.target.value) || '')}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? '' : Number(e.target.value);
+                    handleNestedInputChange('attendance', 'averageRating', value);
+                  }}
                   placeholder="4.5"
                 />
               </div>
