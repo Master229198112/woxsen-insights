@@ -124,4 +124,13 @@ settingsSchema.statics.updateSettings = async function(updates, userId) {
   return await settings.save();
 };
 
-export default mongoose.models.Settings || mongoose.model('Settings', settingsSchema);
+// Export with better error handling for edge runtime
+let Settings;
+try {
+  Settings = mongoose.models?.Settings || mongoose.model('Settings', settingsSchema);
+} catch (error) {
+  console.warn('Settings model creation deferred:', error.message);
+  Settings = null;
+}
+
+export default Settings;

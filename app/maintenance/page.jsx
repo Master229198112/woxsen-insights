@@ -7,14 +7,14 @@ export default function MaintenancePage() {
   const [message, setMessage] = useState('We are currently performing scheduled maintenance. Please check back soon.');
 
   useEffect(() => {
-    // Fetch maintenance message
+    // Fetch maintenance message from public API
     const fetchMessage = async () => {
       try {
-        const response = await fetch('/api/admin/settings');
+        const response = await fetch('/api/maintenance-status');
         if (response.ok) {
-          const { settings } = await response.json();
-          if (settings.maintenanceMessage) {
-            setMessage(settings.maintenanceMessage);
+          const { maintenanceMessage } = await response.json();
+          if (maintenanceMessage) {
+            setMessage(maintenanceMessage);
           }
         }
       } catch (error) {
@@ -27,10 +27,10 @@ export default function MaintenancePage() {
     // Check every 30 seconds if maintenance is over
     const interval = setInterval(async () => {
       try {
-        const response = await fetch('/api/admin/settings');
+        const response = await fetch('/api/maintenance-status');
         if (response.ok) {
-          const { settings } = await response.json();
-          if (!settings.maintenanceMode) {
+          const { maintenanceMode } = await response.json();
+          if (!maintenanceMode) {
             window.location.href = '/';
           }
         }

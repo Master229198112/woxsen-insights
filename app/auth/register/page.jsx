@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import AuthRedirect from '@/components/AuthRedirect';
 import { GraduationCap, Eye, EyeOff, UserPlus, CheckCircle, AlertCircle } from 'lucide-react'; // ADD AlertCircle
 
 export default function Register() {
@@ -127,82 +128,89 @@ export default function Register() {
   // ADD LOADING STATE FOR SETTINGS
   if (settingsLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p>Loading registration form...</p>
+      <AuthRedirect>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p>Loading registration form...</p>
+          </div>
         </div>
-      </div>
+      </AuthRedirect>
     );
   }
 
   // ADD REGISTRATION DISABLED CHECK
   if (!registrationAllowed) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full">
-                <AlertCircle className="h-8 w-8 text-red-600" />
+      <AuthRedirect>
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+          <div className="sm:mx-auto sm:w-full sm:max-w-md">
+            <div className="text-center">
+              <div className="flex justify-center mb-4">
+                <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full">
+                  <AlertCircle className="h-8 w-8 text-red-600" />
+                </div>
               </div>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Disabled</h2>
-            <p className="text-gray-600 mb-6">
-              User registration is currently disabled. Please contact an administrator for access.
-            </p>
-            <div className="space-y-4">
-              <Link href="/auth/signin">
-                <Button variant="outline" className="w-full">
-                  Go to Sign In
-                </Button>
-              </Link>
-              <Link href="/">
-                <Button variant="outline" className="w-full">
-                  Return to Home
-                </Button>
-              </Link>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Disabled</h2>
+              <p className="text-gray-600 mb-6">
+                User registration is currently disabled. Please contact an administrator for access.
+              </p>
+              <div className="space-y-4">
+                <Link href="/auth/signin">
+                  <Button variant="outline" className="w-full">
+                    Go to Sign In
+                  </Button>
+                </Link>
+                <Link href="/">
+                  <Button variant="outline" className="w-full">
+                    Return to Home
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </AuthRedirect>
     );
   }
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="flex items-center justify-center w-16 h-16 bg-green-100 rounded-full">
-                <CheckCircle className="h-8 w-8 text-green-600" />
+      <AuthRedirect>
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+          <div className="sm:mx-auto sm:w-full sm:max-w-md">
+            <div className="text-center">
+              <div className="flex justify-center mb-4">
+                <div className="flex items-center justify-center w-16 h-16 bg-green-100 rounded-full">
+                  <CheckCircle className="h-8 w-8 text-green-600" />
+                </div>
               </div>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h2>
-            <p className="text-gray-600 mb-6">
-              {successMessage} {/* USE DYNAMIC MESSAGE */}
-            </p>
-            <div className="space-y-4">
-              <Link href="/auth/signin">
-                <Button className="w-full">
-                  Go to Sign In
-                </Button>
-              </Link>
-              <Link href="/">
-                <Button variant="outline" className="w-full">
-                  Return to Home
-                </Button>
-              </Link>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h2>
+              <p className="text-gray-600 mb-6">
+                {successMessage} {/* USE DYNAMIC MESSAGE */}
+              </p>
+              <div className="space-y-4">
+                <Link href="/auth/signin">
+                  <Button className="w-full">
+                    Go to Sign In
+                  </Button>
+                </Link>
+                <Link href="/">
+                  <Button variant="outline" className="w-full">
+                    Return to Home
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </AuthRedirect>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <AuthRedirect>
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <div className="flex items-center space-x-3">
@@ -398,5 +406,6 @@ export default function Register() {
         </Card>
       </div>
     </div>
+    </AuthRedirect>
   );
 }
