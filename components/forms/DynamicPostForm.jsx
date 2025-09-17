@@ -157,6 +157,111 @@ const DynamicPostForm = () => {
     }
   }, [session, status, router]);
 
+  // Transform empty strings to undefined for number fields
+  const transformFormData = (data) => {
+    const transformedData = { ...data };
+    
+    // Transform event data number fields
+    if (transformedData.eventData) {
+      const eventData = { ...transformedData.eventData };
+      
+      // Transform coordinates
+      if (eventData.location?.coordinates) {
+        eventData.location.coordinates = {
+          latitude: eventData.location.coordinates.latitude === '' ? undefined : eventData.location.coordinates.latitude,
+          longitude: eventData.location.coordinates.longitude === '' ? undefined : eventData.location.coordinates.longitude
+        };
+      }
+      
+      // Transform attendance fields
+      if (eventData.attendance) {
+        eventData.attendance = {
+          ...eventData.attendance,
+          expectedAttendees: eventData.attendance.expectedAttendees === '' ? undefined : eventData.attendance.expectedAttendees,
+          actualAttendees: eventData.attendance.actualAttendees === '' ? undefined : eventData.attendance.actualAttendees,
+          attendanceRate: eventData.attendance.attendanceRate === '' ? undefined : eventData.attendance.attendanceRate,
+          averageRating: eventData.attendance.averageRating === '' ? undefined : eventData.attendance.averageRating
+        };
+      }
+      
+      // Transform registration fields
+      if (eventData.registration?.registrationFee) {
+        eventData.registration.registrationFee.amount = 
+          eventData.registration.registrationFee.amount === '' ? undefined : eventData.registration.registrationFee.amount;
+      }
+      
+      if (eventData.registration) {
+        eventData.registration.maxParticipants = 
+          eventData.registration.maxParticipants === '' ? undefined : eventData.registration.maxParticipants;
+      }
+      
+      transformedData.eventData = eventData;
+    }
+    
+    // Transform achievement data number fields
+    if (transformedData.achievementData) {
+      const achievementData = { ...transformedData.achievementData };
+      
+      // Transform selection process fields
+      if (achievementData.selectionProcess) {
+        achievementData.selectionProcess = {
+          ...achievementData.selectionProcess,
+          totalApplicants: achievementData.selectionProcess.totalApplicants === '' ? undefined : achievementData.selectionProcess.totalApplicants,
+          totalWinners: achievementData.selectionProcess.totalWinners === '' ? undefined : achievementData.selectionProcess.totalWinners
+        };
+      }
+      
+      // Transform monetary value fields
+      if (achievementData.monetaryValue) {
+        achievementData.monetaryValue = {
+          ...achievementData.monetaryValue,
+          amount: achievementData.monetaryValue.amount === '' ? undefined : achievementData.monetaryValue.amount
+        };
+      }
+      
+      transformedData.achievementData = achievementData;
+    }
+    
+    // Transform patent data number fields
+    if (transformedData.patentData) {
+      const patentData = { ...transformedData.patentData };
+      
+      // Transform inventor contribution percentages
+      if (patentData.inventors && Array.isArray(patentData.inventors)) {
+        patentData.inventors = patentData.inventors.map(inventor => ({
+          ...inventor,
+          contributionPercentage: inventor.contributionPercentage === '' ? undefined : inventor.contributionPercentage
+        }));
+      }
+      
+      transformedData.patentData = patentData;
+    }
+    
+    // Transform research data number fields
+    if (transformedData.researchData) {
+      const researchData = { ...transformedData.researchData };
+      
+      // Transform published year
+      if (researchData.publishedYear === '') {
+        researchData.publishedYear = undefined;
+      }
+      
+      // Transform indexing fields
+      if (researchData.indexedIn) {
+        researchData.indexedIn = {
+          ...researchData.indexedIn,
+          impactFactor: researchData.indexedIn.impactFactor === '' ? undefined : researchData.indexedIn.impactFactor,
+          hIndex: researchData.indexedIn.hIndex === '' ? undefined : researchData.indexedIn.hIndex,
+          citations: researchData.indexedIn.citations === '' ? 0 : researchData.indexedIn.citations // Default to 0 for citations
+        };
+      }
+      
+      transformedData.researchData = researchData;
+    }
+    
+    return transformedData;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -164,8 +269,11 @@ const DynamicPostForm = () => {
     setValidationErrors([]);
 
     try {
+      // Transform form data to handle empty strings
+      const transformedData = transformFormData(formData);
+      
       // Validate using Zod schemas
-      const validationResult = validatePostData(formData);
+      const validationResult = validatePostData(transformedData);
       
       if (!validationResult.success) {
         setValidationErrors(validationResult.errors);
