@@ -144,21 +144,25 @@ const blogSchema = new mongoose.Schema({
     unique: true, // This already creates the index we need
   },
   
-  // Category-specific data fields
+  // Category-specific data references
   researchData: {
-    type: mongoose.Schema.Types.Mixed,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Research',
     default: null,
   },
   patentData: {
-    type: mongoose.Schema.Types.Mixed,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Patent',
     default: null,
   },
   achievementData: {
-    type: mongoose.Schema.Types.Mixed,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Achievement',
     default: null,
   },
   eventData: {
-    type: mongoose.Schema.Types.Mixed,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Event',
     default: null,
   },
 }, {

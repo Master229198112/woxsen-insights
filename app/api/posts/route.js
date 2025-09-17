@@ -128,6 +128,11 @@ export async function POST(request) {
             });
             await specializedPost.save();
             
+            // Link the specialized post to the blog
+            await Blog.findByIdAndUpdate(blogPost._id, {
+              researchData: specializedPost._id
+            });
+            
             // Update user stats
             await User.findByIdAndUpdate(
               user._id, 
@@ -143,6 +148,11 @@ export async function POST(request) {
               ...postData.patentData
             });
             await specializedPost.save();
+            
+            // Link the specialized post to the blog
+            await Blog.findByIdAndUpdate(blogPost._id, {
+              patentData: specializedPost._id
+            });
             
             // Update user stats
             await User.findByIdAndUpdate(
@@ -160,6 +170,11 @@ export async function POST(request) {
             });
             await specializedPost.save();
             
+            // Link the specialized post to the blog
+            await Blog.findByIdAndUpdate(blogPost._id, {
+              achievementData: specializedPost._id
+            });
+            
             // Update user stats
             await User.findByIdAndUpdate(
               user._id, 
@@ -175,6 +190,11 @@ export async function POST(request) {
               ...postData.eventData
             });
             await specializedPost.save();
+            
+            // Link the specialized post to the blog
+            await Blog.findByIdAndUpdate(blogPost._id, {
+              eventData: specializedPost._id
+            });
             
             // Update user stats
             await User.findByIdAndUpdate(
@@ -274,38 +294,17 @@ export async function GET(request) {
 
     let posts = await Blog.find(query)
       .populate('author', 'name department academicInfo.designation profileImage')
+      .populate('researchData')
+      .populate('patentData')
+      .populate('achievementData')
+      .populate('eventData')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
 
-    // If including specialized data, fetch it
-    if (includeSpecialized) {
-      for (let post of posts) {
-        switch (post.category) {
-          case 'research':
-          case 'publications':
-            const researchData = await Research.findOne({ basePost: post._id }).lean();
-            if (researchData) post.researchData = researchData;
-            break;
-
-          case 'patents':
-            const patentData = await Patent.findOne({ basePost: post._id }).lean();
-            if (patentData) post.patentData = patentData;
-            break;
-
-          case 'achievements':
-            const achievementData = await Achievement.findOne({ basePost: post._id }).lean();
-            if (achievementData) post.achievementData = achievementData;
-            break;
-
-          case 'events':
-            const eventData = await Event.findOne({ basePost: post._id }).lean();
-            if (eventData) post.eventData = eventData;
-            break;
-        }
-      }
-    }
+    // Specialized data is now automatically populated via references
+    // No need for manual fetching
 
     const total = await Blog.countDocuments(query);
 

@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Blog from '@/models/Blog';
 import Comment from '@/models/Comment';
+// Import specialized models so they're registered with mongoose
+import Research from '@/models/Research';
+import Patent from '@/models/Patent';
+import Achievement from '@/models/Achievement';
+import Event from '@/models/Event';
 
 export async function GET(request, { params }) {
   try {
@@ -11,13 +16,23 @@ export async function GET(request, { params }) {
 
     let blog;
     
-    // Try to find by slug first, then by ID
+    // Try to find by slug first, then by ID and populate specialized data
     if (id.match(/^[0-9a-fA-F]{24}$/)) {
       // It's a MongoDB ObjectId format
-      blog = await Blog.findById(id).populate('author', 'name email department username');
+      blog = await Blog.findById(id)
+        .populate('author', 'name email department username')
+        .populate('researchData')
+        .populate('patentData')
+        .populate('achievementData')
+        .populate('eventData');
     } else {
       // It's a slug
-      blog = await Blog.findOne({ slug: id }).populate('author', 'name email department username');
+      blog = await Blog.findOne({ slug: id })
+        .populate('author', 'name email department username')
+        .populate('researchData')
+        .populate('patentData')
+        .populate('achievementData')
+        .populate('eventData');
     }
     
     if (!blog) {

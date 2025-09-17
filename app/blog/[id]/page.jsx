@@ -21,7 +21,7 @@ import { formatDate } from '@/lib/utils';
 
 async function getBlog(idOrSlug) {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3001';
     // The API now handles both IDs and slugs
     const response = await fetch(`${baseUrl}/api/blogs/${idOrSlug}`, {
       cache: 'no-store'
@@ -63,7 +63,7 @@ export async function generateMetadata({ params }) {
       type: 'article',
       publishedTime: blog.publishedAt,
       authors: [blog.author.name],
-      url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/blog/${blog.slug || blog._id}`
+      url: `${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/blog/${blog.slug || blog._id}`
     },
     twitter: {
       card: 'summary_large_image',
@@ -72,7 +72,7 @@ export async function generateMetadata({ params }) {
       images: [blog.featuredImage],
     },
     alternates: {
-      canonical: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/blog/${blog.slug || blog._id}`
+      canonical: `${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/blog/${blog.slug || blog._id}`
     }
   };
 }
@@ -176,7 +176,7 @@ export default async function BlogDetailPage({ params }) {
               {/* Share Buttons */}
               <div className="mb-8">
                 <ShareButtons 
-                  url={`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/blog/${blog.slug || blog._id}`}
+                  url={`${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/blog/${blog.slug || blog._id}`}
                   title={blog.title}
                   description={blog.excerpt || blog.title}
                 />
