@@ -317,9 +317,7 @@ const ComprehensiveRichTextEditor = ({
     
     editorProps: {
       attributes: {
-        class: `prose prose-sm sm:prose lg:prose-lg xl:prose-2xl max-w-none focus:outline-none min-h-[300px] p-6 ${
-          isFullscreen ? 'min-h-[calc(100vh-200px)]' : ''
-        }`,
+        class: `prose prose-slate max-w-none focus:outline-none ${isFullscreen ? 'min-h-[calc(100vh-200px)]' : 'min-h-[300px]'}`,
       },
       handleDrop: (view, event, slice, moved) => {
         if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
@@ -712,7 +710,7 @@ const ComprehensiveRichTextEditor = ({
   const wordCount = editor.getText().split(/\s+/).filter(word => word.length > 0).length;
 
   return (
-    <div className={`relative ${className} ${isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''}`}>
+    <div className={`rich-text-editor relative ${className} ${isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''}`}>
       <div className="border rounded-md bg-white">
         {/* Main Toolbar */}
         <div className="flex flex-wrap items-center gap-1 p-2 border-b bg-gray-50 overflow-x-auto">
