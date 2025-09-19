@@ -45,7 +45,8 @@ export async function GET(request, { params }) {
 
     const posts = await Blog.find({ 
       author: author._id, 
-      status: 'published' 
+      status: 'published',
+      rejectionReason: { $exists: false } // Exclude posts that have been rejected
     })
     .select('title excerpt featuredImage category publishedAt views slug')
     .sort({ publishedAt: -1 })
@@ -55,7 +56,8 @@ export async function GET(request, { params }) {
     // Get total count for pagination
     const totalPosts = await Blog.countDocuments({ 
       author: author._id, 
-      status: 'published' 
+      status: 'published',
+      rejectionReason: { $exists: false } // Exclude posts that have been rejected
     });
 
     // Get posts by category for this author
@@ -63,7 +65,8 @@ export async function GET(request, { params }) {
       { 
         $match: { 
           author: author._id, 
-          status: 'published' 
+          status: 'published',
+          rejectionReason: { $exists: false } // Exclude posts that have been rejected
         } 
       },
       {
@@ -91,11 +94,11 @@ export async function GET(request, { params }) {
       if (hasRealStats) {
         console.log('📊 Using stored profile stats (with real data)');
         stats = {
-          totalPosts: author.profileStats.totalPosts || totalPosts,
-          totalViews: await Blog.aggregate([
-            { $match: { author: author._id, status: 'published' } },
-            { $group: { _id: null, totalViews: { $sum: '$views' } } }
-          ]).then(result => result.length > 0 ? result[0].totalViews : 0),
+        totalPosts: totalPosts, // Use actual approved count, not stored stats
+        totalViews: await Blog.aggregate([
+        { $match: { author: author._id, status: 'published', rejectionReason: { $exists: false } } },
+        { $group: { _id: null, totalViews: { $sum: '$views' } } }
+        ]).then(result => result.length > 0 ? result[0].totalViews : 0),
           memberSince: author.createdAt,
           categoriesWritten: postsByCategory.length,
           // Include additional stats if available
@@ -109,7 +112,7 @@ export async function GET(request, { params }) {
         stats = {
           totalPosts,
           totalViews: await Blog.aggregate([
-            { $match: { author: author._id, status: 'published' } },
+            { $match: { author: author._id, status: 'published', rejectionReason: { $exists: false } } },
             { $group: { _id: null, totalViews: { $sum: '$views' } } }
           ]).then(result => result.length > 0 ? result[0].totalViews : 0),
           memberSince: author.createdAt,
