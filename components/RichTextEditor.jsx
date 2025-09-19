@@ -7,6 +7,10 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableHeader from '@tiptap/extension-table-header';
+import TableCell from '@tiptap/extension-table-cell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -28,7 +32,12 @@ import {
   AlertTriangle,
   CheckCircle,
   Eye,
-  Zap
+  Zap,
+  Table as TableIcon,
+  Plus,
+  Minus,
+  Columns,
+  Rows
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import NextImage from 'next/image';
@@ -38,6 +47,9 @@ import { useAIImageDetector, AIImageDetectionResults } from './AiImageDetector';
 const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." }) => {
   const [isMounted, setIsMounted] = useState(false);
   const [showImageDialog, setShowImageDialog] = useState(false);
+  const [showTableDialog, setShowTableDialog] = useState(false);
+  const [tableRows, setTableRows] = useState(3);
+  const [tableCols, setTableCols] = useState(3);
   const [imageUploadMethod, setImageUploadMethod] = useState('upload'); // 'upload' or 'url'
   const [imageUrl, setImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -181,6 +193,27 @@ const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." })
         openOnClick: false,
         HTMLAttributes: {
           class: 'text-blue-500 underline hover:text-blue-700',
+        },
+      }),
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: 'border-collapse border border-gray-300 w-full my-4',
+        },
+      }),
+      TableRow.configure({
+        HTMLAttributes: {
+          class: 'border-b border-gray-200',
+        },
+      }),
+      TableHeader.configure({
+        HTMLAttributes: {
+          class: 'border border-gray-300 px-4 py-2 bg-gray-50 font-semibold text-left',
+        },
+      }),
+      TableCell.configure({
+        HTMLAttributes: {
+          class: 'border border-gray-300 px-4 py-2',
         },
       }),
     ],
@@ -402,6 +435,62 @@ const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." })
     setImageUrl('');
   }, [editor]);
 
+  // Table functions
+  const insertTable = () => {
+    if (editor) {
+      editor.chain().focus().insertTable({ 
+        rows: tableRows, 
+        cols: tableCols, 
+        withHeaderRow: true 
+      }).run();
+      setShowTableDialog(false);
+      setTableRows(3);
+      setTableCols(3);
+    }
+  };
+
+  const addColumnBefore = useCallback(() => {
+    if (editor) {
+      editor.chain().focus().addColumnBefore().run();
+    }
+  }, [editor]);
+
+  const addColumnAfter = useCallback(() => {
+    if (editor) {
+      editor.chain().focus().addColumnAfter().run();
+    }
+  }, [editor]);
+
+  const deleteColumn = useCallback(() => {
+    if (editor) {
+      editor.chain().focus().deleteColumn().run();
+    }
+  }, [editor]);
+
+  const addRowBefore = useCallback(() => {
+    if (editor) {
+      editor.chain().focus().addRowBefore().run();
+    }
+  }, [editor]);
+
+  const addRowAfter = useCallback(() => {
+    if (editor) {
+      editor.chain().focus().addRowAfter().run();
+    }
+  }, [editor]);
+
+  const deleteRow = useCallback(() => {
+    if (editor) {
+      editor.chain().focus().deleteRow().run();
+    }
+  }, [editor]);
+
+  const deleteTable = useCallback(() => {
+    if (editor) {
+      editor.chain().focus().deleteTable().run();
+    }
+  }, [editor]);
+
   const addLink = useCallback(() => {
     if (!editor) return;
     
@@ -525,6 +614,8 @@ const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." })
     );
   }
 
+  const isTableActive = editor.isActive('table');
+
   return (
     <div className="relative">
       <div className="border rounded-md">
@@ -603,6 +694,83 @@ const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." })
           >
             <Quote className="h-4 w-4" />
           </Button>
+
+          <div className="w-px h-6 bg-gray-300 mx-1" />
+
+          {/* Table Controls */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowTableDialog(true)}
+            title="Insert Table"
+            className="bg-green-50 hover:bg-green-100 text-green-600 hover:text-green-700"
+          >
+            <TableIcon className="h-4 w-4" />
+          </Button>
+
+          {isTableActive && (
+            <>
+              <div className="w-px h-6 bg-gray-300 mx-1" />
+              
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={addColumnBefore}
+                title="Add Column Before"
+              >
+                <Plus className="h-4 w-4" />
+                <Columns className="h-3 w-3" />
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={addRowBefore}
+                title="Add Row Before"
+              >
+                <Plus className="h-4 w-4" />
+                <Rows className="h-3 w-3" />
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={deleteColumn}
+                title="Delete Column"
+                className="text-red-600 hover:text-red-700"
+              >
+                <Minus className="h-4 w-4" />
+                <Columns className="h-3 w-3" />
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={deleteRow}
+                title="Delete Row"
+                className="text-red-600 hover:text-red-700"
+              >
+                <Minus className="h-4 w-4" />
+                <Rows className="h-3 w-3" />
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={deleteTable}
+                title="Delete Table"
+                className="text-red-600 hover:text-red-700"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </>
+          )}
 
           <div className="w-px h-6 bg-gray-300 mx-1" />
 
@@ -906,6 +1074,87 @@ const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." })
                   <p>• Supported formats: JPG, PNG, WEBP (max 5MB)</p>
                   <p>• Recommended: 800×600px minimum, sharp focus</p>
                   <p>• External URLs from trusted domains only</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Table Insert Dialog */}
+      {showTableDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <TableIcon className="h-5 w-5" />
+                  Insert Table
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowTableDialog(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rows
+                  </label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={tableRows}
+                    onChange={(e) => setTableRows(parseInt(e.target.value) || 1)}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Columns
+                  </label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={tableCols}
+                    onChange={(e) => setTableCols(parseInt(e.target.value) || 1)}
+                    className="w-full"
+                  />
+                </div>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                  <p className="text-blue-800 text-sm">
+                    <strong>Preview:</strong> {tableRows} rows × {tableCols} columns
+                    <br />
+                    <small>First row will be formatted as headers</small>
+                  </p>
+                </div>
+
+                <div className="flex space-x-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowTableDialog(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={insertTable}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    Insert Table
+                  </Button>
                 </div>
               </div>
             </div>

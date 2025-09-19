@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Navbar from '@/components/layout/Navbar';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { 
   Save, 
   Upload, 
@@ -17,6 +18,21 @@ import {
   FileText,
   CheckCircle
 } from 'lucide-react';
+
+// Dynamically import the comprehensive editor
+const ComprehensiveRichTextEditor = dynamic(() => import('@/components/ComprehensiveRichTextEditor'), {
+  ssr: false,
+  loading: () => (
+    <div className="border rounded-md min-h-[300px] p-4 bg-gray-50">
+      <div className="flex items-center justify-center h-32">
+        <div className="flex items-center space-x-2">
+          <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-gray-500">Loading comprehensive editor...</span>
+        </div>
+      </div>
+    </div>
+  )
+});
 
 export default function EditBlog() {
   const { data: session, status } = useSession();
@@ -397,16 +413,24 @@ export default function EditBlog() {
                 <CardTitle>Content</CardTitle>
               </CardHeader>
               <CardContent>
-                <textarea
-                  ref={contentRef}
-                  value={formData.content}
-                  onChange={(e) => handleInputChange('content', e.target.value)}
-                  className="w-full h-96 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                <ComprehensiveRichTextEditor
+                  content={formData.content}
+                  onChange={(content) => handleInputChange('content', content)}
                   placeholder="Write your blog content here..."
+                  maxCharacters={100000}
+                  showCharacterCount={true}
+                  showWordCount={true}
+                  autoSave={true}
+                  onAutoSave={(content) => {
+                    // Trigger auto-save
+                    if (hasUnsavedChanges) {
+                      autoSave();
+                    }
+                  }}
+                  className="min-h-[400px]"
                 />
                 <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
-                  <span>Use markdown for formatting</span>
-                  <span>{formData.content.length} characters</span>
+                  <span>Use the comprehensive editor with all formatting options</span>
                 </div>
               </CardContent>
             </Card>
