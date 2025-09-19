@@ -125,8 +125,20 @@ export async function PUT(request) {
         break;
         
       case 'affiliations':
+        // Clean affiliations data - remove temporary IDs that aren't valid ObjectIds
+        const cleanedAffiliations = (data.affiliations || []).map(affiliation => {
+          const cleaned = { ...affiliation };
+          
+          // Remove temporary _id if it's not a valid MongoDB ObjectId (24 char hex string)
+          if (cleaned._id && (typeof cleaned._id === 'string' && !cleaned._id.match(/^[0-9a-fA-F]{24}$/))) {
+            delete cleaned._id;
+          }
+          
+          return cleaned;
+        });
+        
         updateFields = {
-          affiliations: data.affiliations || []
+          affiliations: cleanedAffiliations
         };
         break;
         

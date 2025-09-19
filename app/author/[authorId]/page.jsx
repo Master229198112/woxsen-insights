@@ -1,3 +1,5 @@
+'use client';
+import { useState } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -14,7 +16,14 @@ import {
   TrendingUp,
   FileText,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Linkedin,
+  Twitter,
+  ExternalLink,
+  Award,
+  GraduationCap,
+  Mail,
+  Building
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
@@ -141,6 +150,205 @@ export default async function AuthorProfilePage({ params, searchParams }) {
             </div>
           </div>
         </div>
+
+        {/* Academic Information & Social Profiles */}
+        {(author.academicInfo?.designation || author.academicInfo?.qualifications?.length > 0 || 
+          author.academicInfo?.researchInterests?.length > 0 || 
+          Object.values(author.socialProfiles || {}).some(link => link)) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Academic Information */}
+            {(author.academicInfo?.designation || author.academicInfo?.qualifications?.length > 0 || 
+              author.academicInfo?.researchInterests?.length > 0) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <GraduationCap className="h-5 w-5 mr-2" />
+                    Academic Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {author.academicInfo?.designation && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-1">Current Position</h4>
+                      <p className="text-gray-700">{author.academicInfo.designation}</p>
+                    </div>
+                  )}
+                  
+                  {author.academicInfo?.qualifications?.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Qualifications</h4>
+                      <div className="space-y-2">
+                        {author.academicInfo.qualifications.map((qual, index) => (
+                          <div key={index} className="text-sm">
+                            <span className="font-medium">{qual.degree}</span>
+                            {qual.field && <span className="text-gray-600"> in {qual.field}</span>}
+                            {qual.institution && <span className="text-gray-600"> from {qual.institution}</span>}
+                            {qual.year && <span className="text-gray-500"> ({qual.year})</span>}
+                            {qual.isHighestDegree && (
+                              <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Highest</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {author.academicInfo?.researchInterests?.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Research Interests</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {author.academicInfo.researchInterests.map((interest, index) => (
+                          <span key={index} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                            {interest}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Social Profiles */}
+            {Object.values(author.socialProfiles || {}).some(link => link) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <ExternalLink className="h-5 w-5 mr-2" />
+                    Connect & Follow
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {author.email && (
+                      <a 
+                        href={`mailto:${author.email}`}
+                        className="flex items-center text-gray-700 hover:text-blue-600 transition-colors"
+                      >
+                        <Mail className="h-4 w-4 mr-3" />
+                        <span className="text-sm">{author.email}</span>
+                      </a>
+                    )}
+                    
+                    {author.socialProfiles?.linkedin && (
+                      <a 
+                        href={author.socialProfiles.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-gray-700 hover:text-blue-600 transition-colors"
+                      >
+                        <Linkedin className="h-4 w-4 mr-3" />
+                        <span className="text-sm">LinkedIn Profile</span>
+                      </a>
+                    )}
+                    
+                    {author.socialProfiles?.orcid && (
+                      <a 
+                        href={author.socialProfiles.orcid}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-gray-700 hover:text-green-600 transition-colors"
+                      >
+                        <Award className="h-4 w-4 mr-3" />
+                        <span className="text-sm">ORCID</span>
+                      </a>
+                    )}
+                    
+                    {author.socialProfiles?.googleScholar && (
+                      <a 
+                        href={author.socialProfiles.googleScholar}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-gray-700 hover:text-blue-600 transition-colors"
+                      >
+                        <BookOpen className="h-4 w-4 mr-3" />
+                        <span className="text-sm">Google Scholar</span>
+                      </a>
+                    )}
+                    
+                    {author.socialProfiles?.researchGate && (
+                      <a 
+                        href={author.socialProfiles.researchGate}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-gray-700 hover:text-teal-600 transition-colors"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-3" />
+                        <span className="text-sm">ResearchGate</span>
+                      </a>
+                    )}
+                    
+                    {author.socialProfiles?.website && (
+                      <a 
+                        href={author.socialProfiles.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-gray-700 hover:text-purple-600 transition-colors"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-3" />
+                        <span className="text-sm">Personal Website</span>
+                      </a>
+                    )}
+                    
+                    {author.socialProfiles?.twitter && (
+                      <a 
+                        href={author.socialProfiles.twitter}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-gray-700 hover:text-blue-400 transition-colors"
+                      >
+                        <Twitter className="h-4 w-4 mr-3" />
+                        <span className="text-sm">Twitter/X</span>
+                      </a>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* Professional Experience */}
+        {author.affiliations?.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Building className="h-5 w-5 mr-2" />
+                Professional Experience
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {author.affiliations.map((affiliation, index) => (
+                  <div key={index} className="border-l-2 border-blue-200 pl-4 relative">
+                    <div className="absolute w-3 h-3 bg-blue-500 rounded-full -left-2 top-1"></div>
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-lg text-gray-900">{affiliation.position}</h3>
+                      <p className="font-medium text-blue-600">{affiliation.organization}</p>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        <span>
+                          {affiliation.startDate && new Date(affiliation.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                          {' - '}
+                          {affiliation.isCurrent 
+                            ? 'Present' 
+                            : (affiliation.endDate && new Date(affiliation.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }))
+                          }
+                          {affiliation.isCurrent && (
+                            <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Current</span>
+                          )}
+                        </span>
+                      </div>
+                      {affiliation.description && (
+                        <p className="text-gray-700 text-sm mt-2 leading-relaxed">{affiliation.description}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Author Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

@@ -556,7 +556,7 @@ userSchema.statics.findBySlug = async function(slug) {
     username: slug.toLowerCase(),
     isApproved: true,
     role: { $in: ['staff', 'admin'] }
-  }).select('name email department profileImage bio createdAt username');
+  }).select('name email department profileImage bio createdAt username profileStats socialProfiles academicInfo privacySettings affiliations');
   
   if (user) return user;
   
@@ -564,7 +564,7 @@ userSchema.statics.findBySlug = async function(slug) {
   const users = await this.find({
     isApproved: true,
     role: { $in: ['staff', 'admin'] }
-  }).select('name email department profileImage bio createdAt username');
+  }).select('name email department profileImage bio createdAt username profileStats socialProfiles academicInfo privacySettings affiliations');
   
   // Find user whose name slug matches
   for (const candidate of users) {

@@ -233,7 +233,10 @@ const EnhancedProfileForm = ({ user, onUpdate }) => {
     if (newAffiliation.organization.trim()) {
       setFormData(prev => ({
         ...prev,
-        affiliations: [...prev.affiliations, newAffiliation]
+        affiliations: [...prev.affiliations, {
+          ...newAffiliation,
+          _id: Date.now().toString() // Temporary ID for UI purposes
+        }]
       }));
       setNewAffiliation({
         organization: '', position: '', startDate: '', endDate: '', isCurrent: false, description: ''
@@ -597,12 +600,153 @@ const EnhancedProfileForm = ({ user, onUpdate }) => {
     </div>
   );
 
+  // NEW: Render Affiliations function that was missing
+  const renderAffiliations = () => (
+    <div className="space-y-6">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+        <Input
+          value={formData.name}
+          onChange={(e) => handleInputChange(null, 'name', e.target.value)}
+          placeholder="Your full name"
+          required
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Department *</label>
+        <Input
+          value={formData.department}
+          onChange={(e) => handleInputChange(null, 'department', e.target.value)}
+          placeholder="e.g., AI Research Centre"
+          required
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+        <Textarea
+          value={formData.bio}
+          onChange={(e) => handleInputChange(null, 'bio', e.target.value)}
+          placeholder="Tell us about yourself, your research interests, or your role..."
+          rows={4}
+          maxLength={500}
+        />
+        <p className="text-xs text-gray-500 mt-1">{formData.bio.length}/500 characters</p>
+      </div>
+
+      {/* Additional Affiliations */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-3">Additional Affiliations</label>
+        
+        {/* Existing Affiliations */}
+        {formData.affiliations.length > 0 && (
+          <div className="space-y-3 mb-4">
+            {formData.affiliations.map((affiliation, index) => (
+              <div key={index} className="border rounded-lg p-4 bg-gray-50">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{affiliation.organization}</h4>
+                    {affiliation.position && (
+                      <p className="text-sm text-gray-600">{affiliation.position}</p>
+                    )}
+                    {affiliation.startDate && (
+                      <p className="text-xs text-gray-500">
+                        {affiliation.startDate} - {affiliation.isCurrent ? 'Present' : affiliation.endDate}
+                      </p>
+                    )}
+                    {affiliation.description && (
+                      <p className="text-sm text-gray-700 mt-2">{affiliation.description}</p>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeAffiliation(index)}
+                    className="text-red-600 hover:bg-red-50"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Add New Affiliation */}
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+          <div className="grid grid-cols-1 gap-3 mb-3">
+            <Input
+              placeholder="Organization/Institution"
+              value={newAffiliation.organization}
+              onChange={(e) => setNewAffiliation(prev => ({ ...prev, organization: e.target.value }))}
+            />
+            <Input
+              placeholder="Position/Role"
+              value={newAffiliation.position}
+              onChange={(e) => setNewAffiliation(prev => ({ ...prev, position: e.target.value }))}
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                type="date"
+                placeholder="Start Date"
+                value={newAffiliation.startDate}
+                onChange={(e) => setNewAffiliation(prev => ({ ...prev, startDate: e.target.value }))}
+              />
+              <Input
+                type="date"
+                placeholder="End Date"
+                value={newAffiliation.endDate}
+                onChange={(e) => setNewAffiliation(prev => ({ ...prev, endDate: e.target.value }))}
+                disabled={newAffiliation.isCurrent}
+              />
+            </div>
+            <Textarea
+              placeholder="Description (optional)"
+              value={newAffiliation.description}
+              onChange={(e) => setNewAffiliation(prev => ({ ...prev, description: e.target.value }))}
+              rows={2}
+            />
+          </div>
+          <div className="flex justify-between items-center">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={newAffiliation.isCurrent}
+                onChange={(e) => setNewAffiliation(prev => ({ 
+                  ...prev, 
+                  isCurrent: e.target.checked,
+                  endDate: e.target.checked ? '' : prev.endDate
+                }))}
+                className="mr-2"
+              />
+              Current position
+            </label>
+            <Button onClick={addAffiliation} size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              Add Affiliation
+            </Button>
+          </div>
+        </div>
+      </div>
+      
+      <Button 
+        onClick={() => handleSubmit('affiliations')}
+        disabled={loading.affiliations}
+        className="w-full"
+      >
+        {loading.affiliations ? 'Saving...' : 'Save Basic Information'}
+      </Button>
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeTab) {
       case 'basic': return renderBasicInfo();
       case 'academic': return renderAcademicInfo();
       case 'social': return renderSocialProfiles();
       case 'privacy': return renderPrivacySettings();
+      case 'affiliations': return renderAffiliations(); // FIXED: Added missing case
       default: return renderBasicInfo();
     }
   };
