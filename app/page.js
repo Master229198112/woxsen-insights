@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import SmartImage from '@/components/ui/SmartImage';
+import SmartImageWithAI from '@/components/ui/SmartImageWithAI';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -204,12 +204,16 @@ export default async function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {featuredPosts.map((post) => (
                 <Card key={post._id} className="group hover:shadow-lg transition-shadow overflow-hidden">
-                  <div className="relative h-48">
-                    <Image
+                  <div className="relative h-48 bg-gray-100 rounded-lg overflow-hidden">
+                    <SmartImageWithAI
                       src={post.featuredImage}
                       alt={post.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      imageAnalysis={post.imageAnalysis}
+                      variant="full"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      aiLabelPosition="bottom-right"
+                      aiLabelSize="small"
+                      showAILabel={true}
                     />
                     <div className="absolute top-4 left-4">
                       <span className="inline-block px-2 py-1 text-xs font-semibold text-white bg-blue-600 rounded">
@@ -256,12 +260,16 @@ export default async function HomePage() {
               {recentPosts.map((post) => (
                 <Link key={post._id} href={`/blog/${post.slug || post._id}`} className="group">
                   <article>
-                    <div className="relative h-40 mb-4 rounded-lg overflow-hidden">
-                      <Image
+                    <div className="relative h-40 mb-4 rounded-lg overflow-hidden bg-gray-100">
+                      <SmartImageWithAI
                         src={post.featuredImage}
                         alt={post.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        imageAnalysis={post.imageAnalysis}
+                        variant="full"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        aiLabelPosition="bottom-right"
+                        aiLabelSize="small"
+                        showAILabel={true}
                       />
                     </div>
                     <div className="mb-2">

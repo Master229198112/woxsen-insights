@@ -7,8 +7,8 @@ const SmartImageWithAI = ({
   alt, 
   imageAnalysis = null,
   showAILabel = true,
-  aiLabelPosition = 'bottom-left', // 'bottom-left', 'bottom-right', 'top-left', 'top-right', 'below'
-  aiLabelSize = 'default', // 'small', 'default'
+  aiLabelPosition = 'bottom-left',
+  aiLabelSize = 'default',
   className = '',
   ...props 
 }) => {
@@ -30,7 +30,6 @@ const SmartImageWithAI = ({
   };
 
   if (aiLabelPosition === 'below') {
-    // Render AI label below the image
     return (
       <div className={className}>
         <SmartImage 
@@ -50,7 +49,6 @@ const SmartImageWithAI = ({
     );
   }
 
-  // Render AI label overlaid on the image
   return (
     <div className={`relative ${className}`}>
       <SmartImage 

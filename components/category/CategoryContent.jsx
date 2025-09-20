@@ -83,12 +83,12 @@ export default function CategoryContent({ data, info, searchParams }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {data.featuredPosts.map((post) => (
               <Card key={post._id} className="group hover:shadow-lg transition-shadow overflow-hidden">
-                <div className="relative h-40">
+                <div className="relative h-40 bg-gray-100 rounded-lg overflow-hidden">
                   <SmartImageWithAI
                     src={post.featuredImage}
                     alt={post.title}
                     imageAnalysis={post.imageAnalysis}
-                    variant="card"
+                    variant="full"
                     className="w-full h-full group-hover:scale-105 transition-transform duration-300"
                     aiLabelPosition="bottom-right"
                     aiLabelSize="small"
@@ -245,12 +245,12 @@ export default function CategoryContent({ data, info, searchParams }) {
             {data.blogs.map((post) => (
               <Card key={post._id} className="group hover:shadow-lg transition-shadow overflow-hidden">
                 <Link href={`/blog/${post.slug || post._id}`}>
-                  <div className="relative h-48">
+                  <div className="relative h-48 bg-gray-100 rounded-lg overflow-hidden">
                     <SmartImageWithAI
                       src={post.featuredImage}
                       alt={post.title}
                       imageAnalysis={post.imageAnalysis}
-                      variant="card"
+                      variant="full"
                       className="w-full h-full group-hover:scale-105 transition-transform duration-300"
                       aiLabelPosition="bottom-right"
                       aiLabelSize="small"
