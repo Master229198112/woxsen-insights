@@ -118,16 +118,14 @@ const BlogSidebar = ({ relatedBlogs, currentCategory }) => {
                   className="block group"
                 >
                   <div className="flex space-x-3">
-                    <div className="w-16 h-12 relative rounded overflow-hidden flex-shrink-0">
+                    <div className="w-16 h-12 relative rounded overflow-hidden flex-shrink-0 bg-gray-100">
                       <SmartImageWithAI
                         src={blog.featuredImage}
                         alt={blog.title}
                         imageAnalysis={blog.imageAnalysis}
                         variant="thumbnail"
                         className="w-full h-full group-hover:scale-105 transition-transform"
-                        aiLabelPosition="bottom-right"
-                        aiLabelSize="small"
-                        showAILabel={true}
+                        showAILabel={false}
                       />
                     </div>
                     <div className="flex-1">
