@@ -104,6 +104,22 @@ const newsletterSchema = new mongoose.Schema({
     errors: [String],
     sendingStarted: Date,
     sendingCompleted: Date
+  },
+  batchInfo: {
+    totalBatches: {
+      type: Number,
+      default: 0
+    },
+    batchSize: {
+      type: Number,
+      default: 25
+    },
+    completedAt: {
+      type: Date
+    },
+    processingTime: {
+      type: Number // in milliseconds
+    }
   }
 }, {
   timestamps: true

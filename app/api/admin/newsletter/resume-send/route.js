@@ -4,7 +4,7 @@ import connectDB from '@/lib/mongodb';
 import Newsletter from '@/models/Newsletter';
 import NewsletterDelivery from '@/models/NewsletterDelivery';
 import NewsletterSubscriber from '@/models/NewsletterSubscriber';
-import EmailService from '@/lib/email-service';
+import Office365EmailService from '@/lib/office365-email-service';
 
 export async function POST(request) {
   try {
@@ -98,9 +98,9 @@ export async function POST(request) {
     newsletter.status = 'sending';
     await newsletter.save();
 
-    // Send newsletter using the email service
+    // Send newsletter using the optimized Office365 email service
     try {
-      const results = await EmailService.sendNewsletterResume({
+      const results = await Office365EmailService.sendNewsletterResume({
         subscribers: subscribersToSend,
         subject: newsletter.subject,
         content: newsletter.content,
