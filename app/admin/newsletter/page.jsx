@@ -387,6 +387,14 @@ const NewsletterManagement = () => {
             <span>🖥️</span>
             Preview Newsletter Template
           </button>
+          
+          <button
+            onClick={() => window.location.href = '/admin/newsletter/delivery-status'}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2"
+          >
+            <span>📊</span>
+            Delivery Status & Resume
+          </button>
         </div>
         
         {/* Custom Date Picker */}

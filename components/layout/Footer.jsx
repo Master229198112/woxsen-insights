@@ -130,7 +130,7 @@ export default function Footer() {
                   sob.insights@woxsen.edu.in
                 </a>
               </li>
-              <li className="flex items-start space-x-3">
+              {/* <li className="flex items-start space-x-3">
                 <Phone className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
                 <a 
                   href="tel:+919154674599"
@@ -138,7 +138,7 @@ export default function Footer() {
                 >
                   +91 9154674599
                 </a>
-              </li>
+              </li> */}
             </ul>
           </div>
         </div>

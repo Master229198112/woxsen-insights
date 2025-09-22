@@ -540,21 +540,14 @@ const SubscriberManagement = () => {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"> {/* Reduced padding */}
+                <tr><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"> {/* Reduced padding */}
                     <input
                       type="checkbox"
                       checked={selectedSubscribers.length === subscribers.length}
                       onChange={toggleSelectAll}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th> {/* Reduced padding */}
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th> {/* Reduced padding */}
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th> {/* Reduced padding */}
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscribed</th> {/* Reduced padding */}
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preferences</th> {/* Reduced padding */}
-                </tr>
+                  </th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscribed</th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preferences</th></tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {subscribers.map((subscriber) => (
