@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import LoadingLink from '@/components/ui/LoadingLink';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import SmartImageWithAI from '@/components/ui/SmartImageWithAI';
@@ -147,11 +147,11 @@ export default async function HomePage() {
             <p className="text-xl md:text-2xl mb-8 text-blue-100 max-w-3xl mx-auto">
               Discover the latest research, achievements, and insights from our vibrant academic community.
             </p>
-            <Link href="/auth/register">
+            <LoadingLink href="/auth/register">
               <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
                 Join Our Community
               </Button>
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </section>
@@ -235,11 +235,11 @@ export default async function HomePage() {
                       <span>{post.author.name}</span>
                       <span>{formatDate(post.publishedAt)}</span>
                     </div>
-                    <Link href={`/blog/${post.slug || post._id}`} className="block mt-4">
+                    <LoadingLink href={`/blog/${post.slug || post._id}`} className="block mt-4">
                       <Button variant="outline" size="sm" className="w-full">
                         Read More
                       </Button>
-                    </Link>
+                    </LoadingLink>
                   </CardContent>
                 </Card>
               ))}
@@ -258,7 +258,7 @@ export default async function HomePage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {recentPosts.map((post) => (
-                <Link key={post._id} href={`/blog/${post.slug || post._id}`} className="group">
+                <LoadingLink key={post._id} href={`/blog/${post.slug || post._id}`} className="group">
                   <article>
                     <div className="relative h-40 mb-4 rounded-lg overflow-hidden bg-gray-100">
                       <SmartImageWithAI
@@ -286,7 +286,7 @@ export default async function HomePage() {
                       <span>{formatDate(post.publishedAt)}</span>
                     </div>
                   </article>
-                </Link>
+                </LoadingLink>
               ))}
             </div>
           </div>
@@ -308,7 +308,7 @@ export default async function HomePage() {
               const IconComponent = category.icon;
               return (
                 <Card key={category.name} className="group hover:shadow-lg transition-shadow">
-                  <Link href={`/category/${category.name}`}>
+                  <LoadingLink href={`/category/${category.name}`}>
                     <CardHeader>
                       <div className="flex items-center justify-between mb-4">
                         <div className={`flex items-center justify-center w-12 h-12 rounded-lg ${category.color}`}>
@@ -329,7 +329,7 @@ export default async function HomePage() {
                         <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </CardContent>
-                  </Link>
+                  </LoadingLink>
                 </Card>
               );
             })}
@@ -346,16 +346,16 @@ export default async function HomePage() {
             Share your discoveries and contribute to the knowledge ecosystem.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/register">
+            <LoadingLink href="/auth/register">
               <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
                 Join Our Community
               </Button>
-            </Link>
-            <Link href="/auth/signin">
+            </LoadingLink>
+            <LoadingLink href="/auth/signin">
               <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-gray-900">
                 Sign In to Write
               </Button>
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </section>

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import Link from 'next/link';
+import LoadingLink from '@/components/ui/LoadingLink';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -110,11 +110,11 @@ export default function CategoryContent({ data, info, searchParams }) {
                     <span>•</span>
                     <span>{formatDate(post.publishedAt)}</span>
                   </div>
-                  <Link href={`/blog/${post.slug || post._id}`} className="block mt-3">
+                  <LoadingLink href={`/blog/${post.slug || post._id}`} className="block mt-3">
                     <Button variant="outline" size="sm" className="w-full">
                       Read More
                     </Button>
-                  </Link>
+                  </LoadingLink>
                 </CardContent>
               </Card>
             ))}
@@ -244,7 +244,7 @@ export default function CategoryContent({ data, info, searchParams }) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {data.blogs.map((post) => (
               <Card key={post._id} className="group hover:shadow-lg transition-shadow overflow-hidden">
-                <Link href={`/blog/${post.slug || post._id}`}>
+                <LoadingLink href={`/blog/${post.slug || post._id}`}>
                   <div className="relative h-48 bg-gray-100 rounded-lg overflow-hidden">
                     <SmartImageWithAI
                       src={post.featuredImage}
@@ -284,7 +284,7 @@ export default function CategoryContent({ data, info, searchParams }) {
                       </div>
                     </div>
                   </CardContent>
-                </Link>
+                </LoadingLink>
               </Card>
             ))}
           </div>
