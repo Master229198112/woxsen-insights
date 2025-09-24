@@ -35,6 +35,7 @@ export default function Register() {
     'Marketing',
     'Finance',
     'Human Resources',
+    'Political Sciences',
     'Entrepreneurship',
     'Data Analytics',
     'Digital Marketing',
