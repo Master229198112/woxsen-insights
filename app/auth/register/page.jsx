@@ -31,18 +31,14 @@ export default function Register() {
   const router = useRouter();
 
   const departments = [
-    'AI Research Centre',
-    'School of Business',
-    'Business Administration',
+    'Management',
     'Marketing',
     'Finance',
     'Human Resources',
-    'Operations Management',
-    'International Business',
     'Entrepreneurship',
     'Data Analytics',
     'Digital Marketing',
-    'Supply Chain Management',
+    'Operations/Supply Chain Management',
   ];
 
   // ADD THIS useEffect TO CHECK REGISTRATION SETTINGS
