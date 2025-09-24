@@ -40,6 +40,8 @@ export default function Register() {
     'Data Analytics',
     'Digital Marketing',
     'Operations/Supply Chain Management',
+    'Economics',
+    'Sustainability',
   ];
 
   // ADD THIS useEffect TO CHECK REGISTRATION SETTINGS
