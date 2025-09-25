@@ -1,8 +1,6 @@
 'use client';
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
 import { 
-  Share2, 
   MessageCircle, 
   Linkedin, 
   Copy,
@@ -11,15 +9,35 @@ import {
 
 const ShareButtons = ({ url, title, description }) => {
   const [copied, setCopied] = useState(false);
+  const [actualUrl, setActualUrl] = useState(url);
+
+  useEffect(() => {
+    // Fix URL construction issues on client side
+    if (typeof window !== 'undefined') {
+      // If URL looks wrong (contains vercel.app or double slashes), fix it
+      if (url.includes('vercel.app') || url.includes('//blog/')) {
+        const currentOrigin = window.location.origin;
+        const pathMatch = url.match(/\/blog\/(.+)$/);
+        
+        if (pathMatch) {
+          const correctedUrl = `${currentOrigin}/blog/${pathMatch[1]}`;
+          console.log('ShareButtons: Fixed URL from', url, 'to', correctedUrl);
+          setActualUrl(correctedUrl);
+        }
+      } else {
+        setActualUrl(url);
+      }
+    }
+  }, [url]);
 
   const shareLinks = {
-    whatsapp: `https://wa.me/?text=${encodeURIComponent(`${title}\n\n${description}\n\n${url}`)}`,
-    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+    whatsapp: `https://wa.me/?text=${encodeURIComponent(`${title}\n\n${description}\n\n${actualUrl}`)}`,
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(actualUrl)}`,
   };
 
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(actualUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
@@ -46,20 +64,19 @@ const ShareButtons = ({ url, title, description }) => {
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+        onClick={() => console.log('LinkedIn share URL:', shareLinks.linkedin)}
       >
         <Linkedin className="h-4 w-4" />
         <span>LinkedIn</span>
       </a>
       
-      <Button
+      <button
         onClick={copyToClipboard}
-        variant="outline"
-        size="sm"
-        className="flex items-center space-x-2"
+        className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm"
       >
         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
         <span>{copied ? 'Copied!' : 'Copy Link'}</span>
-      </Button>
+      </button>
     </div>
   );
 };
