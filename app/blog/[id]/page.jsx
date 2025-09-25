@@ -50,29 +50,64 @@ export async function generateMetadata({ params }) {
   }
 
   const { blog } = data;
+  const baseUrl = process.env.NEXTAUTH_URL || 'https://sobinsights.aircwou.in';
+  const blogUrl = `${baseUrl}/blog/${blog.slug || blog._id}`;
   
   return {
     title: `${blog.title} - Woxsen Insights`,
     description: blog.excerpt || blog.title,
     keywords: blog.tags?.join(', '),
     authors: [{ name: blog.author.name }],
+    publisher: 'Woxsen University',
+    robots: 'index, follow',
+    
     openGraph: {
       title: blog.title,
       description: blog.excerpt || blog.title,
-      images: [blog.featuredImage],
+      images: blog.featuredImage ? [{
+        url: blog.featuredImage,
+        width: 1200,
+        height: 630,
+        alt: blog.title,
+      }] : [{
+        url: '/Woxsen-University.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Woxsen University School of Business',
+      }],
       type: 'article',
       publishedTime: blog.publishedAt,
+      modifiedTime: blog.updatedAt,
       authors: [blog.author.name],
-      url: `${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/blog/${blog.slug || blog._id}`
+      url: blogUrl,
+      siteName: 'Woxsen University Insights',
+      locale: 'en_US',
+      tags: blog.tags || [],
     },
+    
     twitter: {
       card: 'summary_large_image',
+      site: '@WoxsenUniversity',
+      creator: '@WoxsenUniversity',
       title: blog.title,
       description: blog.excerpt || blog.title,
-      images: [blog.featuredImage],
+      images: [blog.featuredImage || '/Woxsen-University.jpg'],
     },
+    
     alternates: {
-      canonical: `${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/blog/${blog.slug || blog._id}`
+      canonical: blogUrl
+    },
+    
+    // Additional structured data
+    category: blog.category,
+    
+    // Meta tags for better LinkedIn compatibility
+    other: {
+      'article:published_time': blog.publishedAt,
+      'article:modified_time': blog.updatedAt,
+      'article:author': blog.author.name,
+      'article:section': blog.category,
+      'article:tag': blog.tags?.join(',') || '',
     }
   };
 }
@@ -176,7 +211,7 @@ export default async function BlogDetailPage({ params }) {
               {/* Share Buttons */}
               <div className="mb-8">
                 <ShareButtons 
-                  url={`${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/blog/${blog.slug || blog._id}`}
+                  url={`${process.env.NEXTAUTH_URL || 'https://sobinsights.aircwou.in'}/blog/${blog.slug || blog._id}`}
                   title={blog.title}
                   description={blog.excerpt || blog.title}
                 />

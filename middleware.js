@@ -1,12 +1,52 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from 'next-auth/middleware';
 
+// List of social media crawlers that should have unrestricted access
+const SOCIAL_MEDIA_CRAWLERS = [
+  'LinkedInBot',
+  'facebookexternalhit',
+  'TwitterBot',
+  'WhatsApp',
+  'TelegramBot',
+  'SkypeUriPreview',
+  'SlackBot',
+  'DiscordBot',
+  'redditbot',
+  'Twitterbot',
+  'LinkedInbot'
+];
+
+function isSocialMediaCrawler(userAgent) {
+  if (!userAgent) return false;
+  return SOCIAL_MEDIA_CRAWLERS.some(crawler => 
+    userAgent.toLowerCase().includes(crawler.toLowerCase())
+  );
+}
+
 export default withAuth(
   async function middleware(req) {
     const { pathname } = req.nextUrl;
     const token = req.nextauth?.token;
     const isAuthenticated = !!token;
     const isAdmin = token?.role === 'admin';
+    const userAgent = req.headers.get('user-agent') || '';
+    
+    // Allow social media crawlers unrestricted access to public content
+    if (isSocialMediaCrawler(userAgent)) {
+      // Allow access to blog posts, author pages, categories, and static content
+      if (
+        pathname.startsWith('/blog/') ||
+        pathname.startsWith('/author/') ||
+        pathname.startsWith('/category/') ||
+        pathname.startsWith('/public/') ||
+        pathname === '/' ||
+        pathname.startsWith('/_next/') ||
+        pathname.includes('.') // Allow access to files (images, etc.)
+      ) {
+        console.log(`🤖 Allowing social media crawler access: ${userAgent} → ${pathname}`);
+        return NextResponse.next();
+      }
+    }
     
     // Skip middleware for static files and specific paths
     if (
@@ -14,7 +54,9 @@ export default withAuth(
       pathname.startsWith('/api/') ||
       pathname === '/favicon.ico' ||
       pathname.startsWith('/public') ||
-      pathname === '/maintenance'
+      pathname === '/maintenance' ||
+      pathname === '/robots.txt' ||
+      pathname === '/sitemap.xml'
     ) {
       return NextResponse.next();
     }
@@ -94,7 +136,9 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public (public files)
+     * - robots.txt (robots file)
+     * - sitemap.xml (sitemap file)
      */
-    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public|robots.txt|sitemap.xml).*)',
   ],
 };

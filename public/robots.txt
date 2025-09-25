@@ -1,0 +1,40 @@
+# Allow all crawlers access to the site
+User-agent: *
+Allow: /
+
+# Specifically allow social media crawlers
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: TwitterBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+# Block sensitive areas
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /auth/
+
+# Allow access to images and public content
+Allow: /public/
+Allow: /*.jpg
+Allow: /*.jpeg
+Allow: /*.png
+Allow: /*.gif
+Allow: /*.webp
+Allow: /*.svg
+
+# Sitemap location
+Sitemap: https://sobinsights.aircwou.in/sitemap.xml
+
+# Crawl delay to be respectful
+Crawl-delay: 1
