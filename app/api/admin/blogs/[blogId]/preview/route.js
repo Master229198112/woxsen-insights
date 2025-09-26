@@ -3,6 +3,10 @@ import { getServerSession } from 'next-auth/next';
 import connectDB from '@/lib/mongodb';
 import Blog from '@/models/Blog';
 import Comment from '@/models/Comment';
+import Research from '@/models/Research';
+import Patent from '@/models/Patent';
+import Achievement from '@/models/Achievement';
+import Event from '@/models/Event';
 import { authOptions } from '@/lib/auth-config';
 
 // GET /api/admin/blogs/[blogId]/preview - Get blog preview for admin
@@ -22,7 +26,11 @@ export async function GET(request, { params }) {
     const { blogId } = await params;
     
     const blog = await Blog.findById(blogId)
-      .populate('author', 'name email department profileImage bio');
+      .populate('author', 'name email department profileImage bio')
+      .populate('researchData')
+      .populate('patentData')
+      .populate('achievementData')
+      .populate('eventData');
 
     if (!blog) {
       return NextResponse.json(
