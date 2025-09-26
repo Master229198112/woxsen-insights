@@ -87,12 +87,17 @@ const blogSchema = new mongoose.Schema({
     version: {
       type: Number,
       default: 1,
+    },
+    isAdmin: {
+      type: Boolean,
+      default: false,
     }
   }],
   autoSaveData: {
     title: String,
     content: String,
     excerpt: String,
+    categoryData: mongoose.Schema.Types.Mixed,
     lastSaved: {
       type: Date,
       default: Date.now,
@@ -144,7 +149,7 @@ const blogSchema = new mongoose.Schema({
     unique: true, // This already creates the index we need
   },
   
-  // Category-specific data references
+  // Category-specific data references (normalized approach)
   researchData: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Research',
@@ -239,28 +244,6 @@ blogSchema.pre('save', function(next) {
   next();
 });
 
-// Track edit history
-blogSchema.pre('save', function(next) {
-  if (!this.isNew && this.isModified()) {
-    const modifiedFields = this.modifiedPaths();
-    const contentFields = ['title', 'content', 'excerpt', 'featuredImage', 'category', 'tags'];
-    const hasContentChanges = modifiedFields.some(field => contentFields.includes(field));
-    
-    if (hasContentChanges && this.lastEditedBy) {
-      const version = this.editHistory.length + 1;
-      const changes = modifiedFields.filter(field => contentFields.includes(field)).join(', ');
-      
-      this.editHistory.push({
-        editedBy: this.lastEditedBy,
-        editedAt: new Date(),
-        changes: `Modified: ${changes}`,
-        version: version
-      });
-    }
-  }
-  next();
-});
-
 // Auto-save method
 blogSchema.methods.autoSave = function(data) {
   this.autoSaveData = {
@@ -270,13 +253,11 @@ blogSchema.methods.autoSave = function(data) {
   return this.save({ validateBeforeSave: false });
 };
 
-// Create indexes (REMOVED DUPLICATE SLUG INDEX)
+// Create indexes
 blogSchema.index({ status: 1, publishedAt: -1 });
 blogSchema.index({ category: 1, status: 1 });
 blogSchema.index({ author: 1 });
 blogSchema.index({ tags: 1 });
 blogSchema.index({ 'imageAnalysis.isAI': 1 }); // Index for AI detection queries
-// REMOVED: blogSchema.index({ slug: 1 }, { unique: true }); 
-// The slug index is already created by the "unique: true" in the schema definition
 
 export default mongoose.models.Blog || mongoose.model('Blog', blogSchema);

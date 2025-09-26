@@ -8,6 +8,7 @@ import Navbar from '@/components/layout/Navbar';
 import Image from 'next/image';
 import SmartImage from '@/components/ui/SmartImage';
 import BlogContent from '@/components/blog/BlogContent';
+import CategoryBasedDisplay from '@/components/blog/displays/CategoryBasedDisplay';
 import { 
   FileText, 
   Clock, 
@@ -257,9 +258,13 @@ const BlogPreviewModal = ({ blog, isOpen, onClose, onApprove, onReject, onDelete
               )}
             </header>
 
-            {/* Blog Content - Properly rendered HTML with same styling as actual blog */}
+            {/* Blog Content - Use CategoryBasedDisplay for research/patents/achievements/events, BlogContent for traditional blogs */}
             <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
-              <BlogContent content={blog.content} />
+              {['research', 'patents', 'achievements', 'events'].includes(blog.category) ? (
+                <CategoryBasedDisplay blog={blog} />
+              ) : (
+                <BlogContent content={blog.content} />
+              )}
             </div>
 
             {/* Tags */}

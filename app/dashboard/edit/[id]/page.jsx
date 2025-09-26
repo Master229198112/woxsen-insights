@@ -16,7 +16,13 @@ import {
   History,
   ArrowLeft,
   FileText,
-  CheckCircle
+  CheckCircle,
+  Settings,
+  BookOpen,
+  Award,
+  Calendar,
+  Lightbulb,
+  Building
 } from 'lucide-react';
 
 // Dynamically import the comprehensive editor
@@ -34,6 +40,47 @@ const ComprehensiveRichTextEditor = dynamic(() => import('@/components/Comprehen
   )
 });
 
+// Dynamically import category-specific forms
+const ResearchForm = dynamic(() => import('@/components/forms/ResearchForm'), {
+  ssr: false,
+  loading: () => (
+    <div className="animate-pulse">
+      <div className="h-32 bg-gray-200 rounded mb-4"></div>
+      <div className="h-24 bg-gray-200 rounded mb-4"></div>
+    </div>
+  )
+});
+
+const PatentForm = dynamic(() => import('@/components/forms/PatentForm'), {
+  ssr: false,
+  loading: () => (
+    <div className="animate-pulse">
+      <div className="h-32 bg-gray-200 rounded mb-4"></div>
+      <div className="h-24 bg-gray-200 rounded mb-4"></div>
+    </div>
+  )
+});
+
+const AchievementForm = dynamic(() => import('@/components/forms/AchievementForm'), {
+  ssr: false,
+  loading: () => (
+    <div className="animate-pulse">
+      <div className="h-32 bg-gray-200 rounded mb-4"></div>
+      <div className="h-24 bg-gray-200 rounded mb-4"></div>
+    </div>
+  )
+});
+
+const EventForm = dynamic(() => import('@/components/forms/EventForm'), {
+  ssr: false,
+  loading: () => (
+    <div className="animate-pulse">
+      <div className="h-32 bg-gray-200 rounded mb-4"></div>
+      <div className="h-24 bg-gray-200 rounded mb-4"></div>
+    </div>
+  )
+});
+
 export default function EditBlog() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -42,12 +89,16 @@ export default function EditBlog() {
   
   const [blog, setBlog] = useState(null);
   const [formData, setFormData] = useState({
+    // Generic blog fields
     title: '',
     content: '',
     excerpt: '',
     category: '',
     tags: [],
-    featuredImage: ''
+    featuredImage: '',
+    
+    // Category-specific data will be stored here
+    categoryData: {}
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -59,7 +110,6 @@ export default function EditBlog() {
   const [previewMode, setPreviewMode] = useState(false);
 
   const autoSaveIntervalRef = useRef(null);
-  const contentRef = useRef(null);
 
   const categories = [
     'research', 
@@ -71,6 +121,29 @@ export default function EditBlog() {
     'blogs',
     'industry-collaborations'
   ];
+
+  // Helper function to get category icon
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case 'research':
+        return BookOpen;
+      case 'achievements':
+        return Award;
+      case 'events':
+        return Calendar;
+      case 'patents':
+        return Lightbulb;
+      case 'industry-collaborations':
+        return Building;
+      default:
+        return FileText;
+    }
+  };
+
+  // Helper function to determine if category needs specific form
+  const needsCategorySpecificForm = (category) => {
+    return ['research', 'patents', 'achievements', 'events'].includes(category);
+  };
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -107,13 +180,18 @@ export default function EditBlog() {
       if (response.ok) {
         setBlog(data.blog);
         setPermissions(data.permissions);
+        
+        // Extract category-specific data from the blog
+        const categorySpecificData = extractCategoryData(data.blog);
+        
         setFormData({
           title: data.blog.title,
           content: data.blog.content,
           excerpt: data.blog.excerpt,
           category: data.blog.category,
           tags: data.blog.tags || [],
-          featuredImage: data.blog.featuredImage
+          featuredImage: data.blog.featuredImage,
+          categoryData: categorySpecificData
         });
         
         // Check for auto-saved data
@@ -132,7 +210,8 @@ export default function EditBlog() {
                 ...prev,
                 title: autoSaveData.autoSaveData.title || prev.title,
                 content: autoSaveData.autoSaveData.content || prev.content,
-                excerpt: autoSaveData.autoSaveData.excerpt || prev.excerpt
+                excerpt: autoSaveData.autoSaveData.excerpt || prev.excerpt,
+                categoryData: autoSaveData.autoSaveData.categoryData || prev.categoryData
               }));
               setHasUnsavedChanges(true);
             }
@@ -151,6 +230,22 @@ export default function EditBlog() {
     }
   };
 
+  // Extract category-specific data from populated blog object (same pattern as ResearchDisplay, PatentDisplay, etc.)
+  const extractCategoryData = (blog) => {
+    switch (blog.category) {
+      case 'research':
+        return blog.researchData || {};
+      case 'patents':
+        return blog.patentData || {};
+      case 'achievements':
+        return blog.achievementData || {};
+      case 'events':
+        return blog.eventData || {};
+      default:
+        return {};
+    }
+  };
+
   const autoSave = async () => {
     if (!hasUnsavedChanges || autoSaving) return;
 
@@ -164,7 +259,8 @@ export default function EditBlog() {
         body: JSON.stringify({
           title: formData.title,
           content: formData.content,
-          excerpt: formData.excerpt
+          excerpt: formData.excerpt,
+          categoryData: formData.categoryData
         }),
       });
 
@@ -183,6 +279,14 @@ export default function EditBlog() {
     setFormData(prev => ({
       ...prev,
       [field]: value
+    }));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleCategoryDataChange = (categoryData) => {
+    setFormData(prev => ({
+      ...prev,
+      categoryData
     }));
     setHasUnsavedChanges(true);
   };
@@ -228,6 +332,8 @@ export default function EditBlog() {
         },
         body: JSON.stringify({
           ...formData,
+          // Merge category-specific data into the main object
+          ...formData.categoryData,
           submitForReview
         }),
       });
@@ -256,6 +362,32 @@ export default function EditBlog() {
     }
   };
 
+  // Render category-specific form
+  const renderCategoryForm = () => {
+    if (!needsCategorySpecificForm(formData.category)) {
+      return null;
+    }
+
+    const props = {
+      data: formData.categoryData,
+      onChange: handleCategoryDataChange,
+      errors: []
+    };
+
+    switch (formData.category) {
+      case 'research':
+        return <ResearchForm {...props} />;
+      case 'patents':
+        return <PatentForm {...props} />;
+      case 'achievements':
+        return <AchievementForm {...props} />;
+      case 'events':
+        return <EventForm {...props} />;
+      default:
+        return null;
+    }
+  };
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -278,6 +410,8 @@ export default function EditBlog() {
     );
   }
 
+  const CategoryIcon = getCategoryIcon(formData.category);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -296,7 +430,10 @@ export default function EditBlog() {
             </Button>
             
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Edit Blog</h1>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+                <CategoryIcon className="h-8 w-8 mr-3 text-blue-600" />
+                Edit {formData.category ? formData.category.charAt(0).toUpperCase() + formData.category.slice(1) : 'Blog'}
+              </h1>
               <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                   blog.status === 'draft' ? 'bg-gray-100 text-gray-800' :
@@ -375,7 +512,7 @@ export default function EditBlog() {
                 <div>
                   <p className="font-medium text-orange-800">Admin Edit Mode</p>
                   <p className="text-sm text-orange-700">
-                    You are editing a {blog.status} blog. Changes will be tracked and the author will be notified.
+                    You are editing a {blog.status} {formData.category}. Changes will be tracked and the author will be notified.
                   </p>
                 </div>
               </div>
@@ -384,12 +521,12 @@ export default function EditBlog() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Main Editor */}
+          {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
             {/* Title */}
             <Card>
               <CardHeader>
-                <CardTitle>Blog Title</CardTitle>
+                <CardTitle>Title</CardTitle>
               </CardHeader>
               <CardContent>
                 <input
@@ -397,7 +534,7 @@ export default function EditBlog() {
                   value={formData.title}
                   onChange={(e) => handleInputChange('title', e.target.value)}
                   className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                  placeholder="Enter blog title..."
+                  placeholder={`Enter ${formData.category || 'blog'} title...`}
                   maxLength={200}
                 />
                 <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
@@ -407,53 +544,68 @@ export default function EditBlog() {
               </CardContent>
             </Card>
 
-            {/* Content */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Content</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ComprehensiveRichTextEditor
-                  content={formData.content}
-                  onChange={(content) => handleInputChange('content', content)}
-                  placeholder="Write your blog content here..."
-                  maxCharacters={100000}
-                  showCharacterCount={true}
-                  showWordCount={true}
-                  autoSave={true}
-                  onAutoSave={(content) => {
-                    // Trigger auto-save
-                    if (hasUnsavedChanges) {
-                      autoSave();
-                    }
-                  }}
-                  className="min-h-[400px]"
-                />
-                <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
-                  <span>Use the comprehensive editor with all formatting options</span>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Category-Specific Form */}
+            {needsCategorySpecificForm(formData.category) ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Settings className="h-5 w-5 mr-2" />
+                    {formData.category.charAt(0).toUpperCase() + formData.category.slice(1)} Details
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Fill in the specific information for this {formData.category}
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {renderCategoryForm()}
+                </CardContent>
+              </Card>
+            ) : (
+              /* Generic Content for regular blogs */
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Content</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ComprehensiveRichTextEditor
+                      content={formData.content}
+                      onChange={(content) => handleInputChange('content', content)}
+                      placeholder="Write your blog content here..."
+                      maxCharacters={100000}
+                      showCharacterCount={true}
+                      showWordCount={true}
+                      autoSave={true}
+                      onAutoSave={(content) => {
+                        if (hasUnsavedChanges) {
+                          autoSave();
+                        }
+                      }}
+                      className="min-h-[400px]"
+                    />
+                  </CardContent>
+                </Card>
 
-            {/* Excerpt */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Excerpt</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <textarea
-                  value={formData.excerpt}
-                  onChange={(e) => handleInputChange('excerpt', e.target.value)}
-                  className="w-full h-24 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  placeholder="Brief description of your blog..."
-                  maxLength={300}
-                />
-                <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
-                  <span>This will appear in blog previews</span>
-                  <span>{formData.excerpt.length}/300</span>
-                </div>
-              </CardContent>
-            </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Excerpt</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <textarea
+                      value={formData.excerpt}
+                      onChange={(e) => handleInputChange('excerpt', e.target.value)}
+                      className="w-full h-24 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      placeholder="Brief description of your blog..."
+                      maxLength={300}
+                    />
+                    <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
+                      <span>This will appear in blog previews</span>
+                      <span>{formData.excerpt.length}/300</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -499,7 +651,15 @@ export default function EditBlog() {
               <CardContent>
                 <select
                   value={formData.category}
-                  onChange={(e) => handleInputChange('category', e.target.value)}
+                  onChange={(e) => {
+                    handleInputChange('category', e.target.value);
+                    // Reset category data when changing category
+                    setFormData(prev => ({
+                      ...prev,
+                      category: e.target.value,
+                      categoryData: {}
+                    }));
+                  }}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Select category</option>
@@ -509,6 +669,11 @@ export default function EditBlog() {
                     </option>
                   ))}
                 </select>
+                {needsCategorySpecificForm(formData.category) && (
+                  <p className="text-xs text-blue-600 mt-2">
+                    ✨ This category has specialized fields
+                  </p>
+                )}
               </CardContent>
             </Card>
 

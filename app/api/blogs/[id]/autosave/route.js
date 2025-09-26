@@ -19,7 +19,7 @@ export async function POST(request, { params }) {
     await connectDB();
     
     const { id } = await params;
-    const { title, content, excerpt } = await request.json();
+    const { title, content, excerpt, categoryData } = await request.json();
     
     const blog = await Blog.findById(id);
 
@@ -41,12 +41,19 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Auto-save the data
-    await blog.autoSave({
+    // Auto-save the data including category-specific data
+    const autoSaveData = {
       title: title || blog.title,
       content: content || blog.content,
       excerpt: excerpt || blog.excerpt
-    });
+    };
+
+    // Include category-specific data if provided
+    if (categoryData && typeof categoryData === 'object') {
+      autoSaveData.categoryData = categoryData;
+    }
+
+    await blog.autoSave(autoSaveData);
 
     return NextResponse.json({
       message: 'Auto-saved successfully',
