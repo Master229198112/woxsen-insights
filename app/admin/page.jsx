@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Navbar from '@/components/layout/Navbar';
+import SmartAutoRefresh from '@/components/admin/SmartAutoRefresh';
 import { 
   Users, 
   FileText, 
@@ -162,12 +163,25 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Admin Dashboard
-          </h1>
-          <p className="text-gray-600">
-            Welcome back, {session?.user?.name}! Manage your Woxsen Insights platform.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Admin Dashboard
+              </h1>
+              <p className="text-gray-600">
+                Welcome back, {session?.user?.name}! Manage your Woxsen Insights platform.
+              </p>
+            </div>
+            
+            {/* Smart Auto-Refresh Controls - DISABLED */}
+            <SmartAutoRefresh
+              onRefresh={fetchDashboardData}
+              defaultInterval={300000} // 5 minutes for dashboard
+              enabled={false} // DISABLED to prevent excessive API calls
+              showStatus={true}
+              showControls={true}
+            />
+          </div>
         </div>
 
         {/* Stats Cards */}

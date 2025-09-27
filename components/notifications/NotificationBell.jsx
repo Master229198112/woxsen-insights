@@ -1,9 +1,11 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
+import { useSmartPolling } from '@/hooks/useSmartPolling';
 import { 
   Bell, 
   X, 
@@ -12,7 +14,9 @@ import {
   Edit, 
   MessageSquare, 
   Clock,
-  Settings
+  Settings,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 
 const formatTimeAgo = (date) => {
@@ -51,14 +55,54 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
-    if (session) {
-      fetchNotifications();
-      // Set up polling for new notifications every 30 seconds
-      const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
+  // Optimized fetch with minimal logging
+  const fetchNotificationsCallback = useCallback(async () => {
+    if (!session) {
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/notifications?limit=10');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setNotifications(data.notifications);
+        setUnreadCount(data.unreadCount);
+        // Only log on errors or when debugging is needed
+        if (process.env.NODE_ENV === 'development' && window.DEBUG_NOTIFICATIONS) {
+          console.log('🔔 Notifications updated:', data.unreadCount, 'unread');
+        }
+      } else {
+        console.error('🔔 [Error] API Error:', data.error);
+      }
+    } catch (error) {
+      console.error('🔔 [Error] Fetch failed:', error);
     }
   }, [session]);
+
+  // Smart polling with 5-minute intervals (much longer to reduce server load)
+  const { isActive, isPolling, forceUpdate, lastPollTime } = useSmartPolling(
+    fetchNotificationsCallback, 
+    300000, // 5 minutes instead of 2 minutes
+    !!session // Only enable if user is logged in
+  );
+
+  // Cleanup logging for production
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && window.DEBUG_NOTIFICATIONS) {
+      console.log('🔔 [Debug] NotificationBell mounted:', {
+        session: !!session,
+        isPolling,
+        isActive
+      });
+    }
+    
+    return () => {
+      if (process.env.NODE_ENV === 'development' && window.DEBUG_NOTIFICATIONS) {
+        console.log('🔔 [Debug] NotificationBell cleanup');
+      }
+    };
+  }, [session, isPolling, isActive]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -73,20 +117,6 @@ export default function NotificationBell() {
     }
   }, [isOpen]);
 
-  const fetchNotifications = async () => {
-    try {
-      const response = await fetch('/api/notifications?limit=10');
-      const data = await response.json();
-      
-      if (response.ok) {
-        setNotifications(data.notifications);
-        setUnreadCount(data.unreadCount);
-      }
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-    }
-  };
-
   const markAsRead = async (notificationIds) => {
     try {
       const response = await fetch('/api/notifications', {
@@ -98,7 +128,7 @@ export default function NotificationBell() {
       });
 
       if (response.ok) {
-        fetchNotifications(); // Refresh notifications
+        fetchNotificationsCallback();
       }
     } catch (error) {
       console.error('Failed to mark notifications as read:', error);
@@ -117,7 +147,7 @@ export default function NotificationBell() {
       });
 
       if (response.ok) {
-        fetchNotifications(); // Refresh notifications
+        fetchNotificationsCallback();
       }
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
@@ -142,7 +172,7 @@ export default function NotificationBell() {
   }
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef} data-component="notification-bell">
       <Button
         variant="ghost"
         size="sm"
@@ -150,6 +180,16 @@ export default function NotificationBell() {
         className="relative p-2"
       >
         <Bell className="h-5 w-5" />
+        {/* Smart polling indicator */}
+        {session && (
+          <div className="absolute -bottom-1 -right-1">
+            {isActive && isPolling ? (
+              <Wifi className="h-3 w-3 text-green-500" title="Smart polling active (5min)" />
+            ) : (
+              <WifiOff className="h-3 w-3 text-gray-400" title="Polling paused (tab inactive)" />
+            )}
+          </div>
+        )}
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-medium">
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -163,6 +203,19 @@ export default function NotificationBell() {
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
               <div className="flex items-center space-x-2">
+                {/* Force refresh button */}
+                <Button
+                  onClick={() => {
+                    console.log('🔔 Manual refresh triggered');
+                    forceUpdate();
+                  }}
+                  variant="ghost"
+                  size="sm"
+                  className="text-sm text-gray-600 hover:text-gray-700"
+                  title="Refresh notifications"
+                >
+                  <Bell className="h-3 w-3" />
+                </Button>
                 {unreadCount > 0 && (
                   <Button
                     onClick={markAllAsRead}
@@ -188,6 +241,27 @@ export default function NotificationBell() {
                 </Button>
               </div>
             </div>
+            {/* Smart polling status */}
+            {session && (
+              <div className="text-xs text-gray-500 mt-2 flex items-center space-x-2">
+                <div className="flex items-center space-x-1">
+                  {isActive && isPolling ? (
+                    <>
+                      <Wifi className="h-3 w-3 text-green-500" />
+                      <span>Live updates (5min)</span>
+                    </>
+                  ) : (
+                    <>
+                      <WifiOff className="h-3 w-3 text-gray-400" />
+                      <span>Paused (tab inactive)</span>
+                    </>
+                  )}
+                </div>
+                {lastPollTime && (
+                  <span>• Last: {lastPollTime.toLocaleTimeString()}</span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="max-h-96 overflow-y-auto">

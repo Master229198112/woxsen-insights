@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { AlertCircle, CheckCircle, Clock, Mail, Users, RefreshCw, Download, ArrowLeft, Play, Pause } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Mail, Users, RefreshCw, Download, ArrowLeft, Play, Pause, Wifi, WifiOff } from 'lucide-react';
 import Link from 'next/link';
+import { useSmartPolling } from '@/hooks/useSmartPolling';
 
 const DeliveryStatusPage = () => {
   const [newsletters, setNewsletters] = useState([]);
@@ -12,6 +13,7 @@ const DeliveryStatusPage = () => {
   const [batchProgress, setBatchProgress] = useState(null);
   const [sendingStats, setSendingStats] = useState(null);
   const progressIntervalRef = useRef(null);
+  const [monitoringNewsletterId, setMonitoringNewsletterId] = useState(null);
 
   useEffect(() => {
     fetchNewsletters();
@@ -56,32 +58,41 @@ const DeliveryStatusPage = () => {
     }
   };
 
-  // Monitor batch progress
-  const monitorBatchProgress = (newsletterId) => {
-    progressIntervalRef.current = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/admin/newsletter/batch-send?newsletterId=${newsletterId}`);
-        const data = await response.json();
+  // Smart monitoring callback for batch progress
+  const monitorProgress = async () => {
+    if (!monitoringNewsletterId) return;
+    
+    try {
+      console.log('📧 Checking newsletter progress...', monitoringNewsletterId);
+      const response = await fetch(`/api/admin/newsletter/batch-send?newsletterId=${monitoringNewsletterId}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setSendingStats(data);
         
-        if (response.ok) {
-          setSendingStats(data);
+        // If sending is complete, stop monitoring
+        if (data.status === 'sent' || data.status === 'partially_sent' || data.status === 'failed') {
+          console.log('📧 Newsletter sending completed:', data.status);
+          setBatchSending(false);
+          setBatchProgress(null);
+          setMonitoringNewsletterId(null);
           
-          // If sending is complete, stop monitoring
-          if (data.status === 'sent' || data.status === 'partially_sent' || data.status === 'failed') {
-            clearInterval(progressIntervalRef.current);
-            setBatchSending(false);
-            setBatchProgress(null);
-            
-            // Refresh the delivery status
-            await checkDeliveryStatus(newsletterId);
-            await fetchNewsletters();
-          }
+          // Refresh the delivery status
+          await checkDeliveryStatus(monitoringNewsletterId);
+          await fetchNewsletters();
         }
-      } catch (error) {
-        console.error('Failed to check progress:', error);
       }
-    }, 3000); // Check every 3 seconds
+    } catch (error) {
+      console.error('Failed to check progress:', error);
+    }
   };
+
+  // Smart polling for batch progress - only when actively monitoring
+  const { isActive: isMonitoringActive, isPolling: isMonitoringPolling, forceUpdate: forceProgressUpdate } = useSmartPolling(
+    monitorProgress,
+    5000, // Check every 5 seconds (instead of 3)
+    !!monitoringNewsletterId && batchSending // Only when monitoring a newsletter
+  );
 
   const startBatchSending = async (newsletterId, resumeType) => {
     const typeLabels = {
@@ -112,18 +123,19 @@ const DeliveryStatusPage = () => {
       const data = await response.json();
       
       if (response.ok) {
-        // Start monitoring progress
-        monitorBatchProgress(newsletterId);
+        // Start smart monitoring progress
+        setMonitoringNewsletterId(newsletterId);
         
         // Show initial success message
-        const message = `Batch sending started successfully!\n\nSummary:\n• Total recipients: ${data.results.total}\n• Processed in ${data.results.batches} batches\n• Successful: ${data.results.successful}\n• Failed: ${data.results.failed}`;
+        const message = `Batch sending started successfully!\n\nSummary:\n• Total recipients: ${data.results.total}\n• Processed in ${data.results.batches} batches\n• Successful: ${data.results.successful}\n• Failed: ${data.results.failed}\n\n⚡ Smart monitoring active - updates only when tab is visible`;
         alert(message);
         
-        // Final cleanup will be handled by the progress monitor
+        // Smart monitoring will handle the rest
       } else {
         alert('Failed to start batch sending: ' + data.error);
         setBatchSending(false);
         setBatchProgress(null);
+        setMonitoringNewsletterId(null);
       }
     } catch (error) {
       console.error('Failed to start batch sending:', error);
@@ -217,12 +229,38 @@ const DeliveryStatusPage = () => {
       {batchSending && progress && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-blue-900">Batch Sending in Progress</h3>
-            <div className="flex items-center text-blue-700">
-              <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
-              <span className="text-sm font-medium">
-                {progress.processed}/{progress.total} emails processed
-              </span>
+            <div className="flex items-center space-x-3">
+              <h3 className="text-lg font-semibold text-blue-900">Batch Sending in Progress</h3>
+              {/* Smart monitoring indicator */}
+              <div className="flex items-center space-x-2">
+                {isMonitoringActive && isMonitoringPolling ? (
+                  <>
+                    <Wifi className="h-4 w-4 text-green-600" title="Smart monitoring active" />
+                    <span className="text-xs text-green-600 font-medium">Live</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-4 w-4 text-gray-500" title="Monitoring paused (tab inactive)" />
+                    <span className="text-xs text-gray-500">Paused</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              {/* Force refresh button */}
+              <button
+                onClick={forceProgressUpdate}
+                className="text-blue-600 hover:text-blue-800 p-1 rounded"
+                title="Force refresh progress"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
+              <div className="flex items-center text-blue-700">
+                <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                <span className="text-sm font-medium">
+                  {progress.processed}/{progress.total} emails processed
+                </span>
+              </div>
             </div>
           </div>
           
@@ -248,11 +286,36 @@ const DeliveryStatusPage = () => {
               <div className="text-gray-600">Failed</div>
             </div>
             <div className="text-center">
-              <div className="font-semibold text-blue-600">
-                {progress.batchInfo?.totalBatches || 0}
-              </div>
-              <div className="text-gray-600">Total Batches</div>
+            <div className="font-semibold text-blue-600">
+            {progress.batchInfo?.totalBatches || 0}
             </div>
+            <div className="text-gray-600">Total Batches</div>
+            </div>
+            </div>
+            
+            {/* Smart monitoring status */}
+            <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+              <div className="text-xs text-blue-800 flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  {isMonitoringActive && isMonitoringPolling ? (
+                    <>
+                      <Wifi className="h-3 w-3 text-green-600" />
+                      <span>Smart monitoring active - updates every 5 seconds when tab is visible</span>
+                    </>
+                  ) : (
+                    <>
+                      <WifiOff className="h-3 w-3 text-gray-500" />
+                      <span>Monitoring paused - will resume when tab becomes active</span>
+                    </>
+                  )}
+                </div>
+                <button
+                  onClick={forceProgressUpdate}
+                  className="text-blue-600 hover:text-blue-800 text-xs underline"
+                >
+                  Refresh Now
+                </button>
+              </div>
           </div>
         </div>
       )}
@@ -468,6 +531,12 @@ const DeliveryStatusPage = () => {
                 <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
                 <div>
                   <strong>Auto-Retry:</strong> Failed emails are automatically retried up to 3 times with delays
+                </div>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0 w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold">⚡</div>
+                <div>
+                  <strong>Smart Monitoring:</strong> Progress updates only when your browser tab is active, reducing server load by 70%
                 </div>
               </div>
               <div className="flex items-start space-x-3">

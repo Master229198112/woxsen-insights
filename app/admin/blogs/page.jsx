@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Navbar from '@/components/layout/Navbar';
+import SmartAutoRefresh from '@/components/admin/SmartAutoRefresh';
 import Image from 'next/image';
 import SmartImage from '@/components/ui/SmartImage';
 import BlogContent from '@/components/blog/BlogContent';
@@ -651,8 +652,21 @@ export default function AdminBlogs() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Enhanced Blog Management</h1>
-          <p className="text-gray-600">Review, edit, delete, and manage blog submissions with full admin access</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Enhanced Blog Management</h1>
+              <p className="text-gray-600">Review, edit, delete, and manage blog submissions with full admin access</p>
+            </div>
+            
+            {/* Smart Auto-Refresh for Blog Management - DISABLED */}
+            <SmartAutoRefresh
+              onRefresh={fetchBlogs}
+              defaultInterval={120000} // 2 minutes (more frequent for pending content)
+              enabled={false} // DISABLED to prevent excessive API calls
+              showStatus={true}
+              showControls={true}
+            />
+          </div>
         </div>
 
         {/* Stats Cards */}
