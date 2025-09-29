@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import connectDB from '@/lib/mongodb';
 import Newsletter from '@/models/Newsletter';
 import NewsletterSubscriber from '@/models/NewsletterSubscriber';
+import NewsletterDelivery from '@/models/NewsletterDelivery';
 import EmailTrackingService from '@/lib/email-tracking';
 import EmailService from '@/lib/email-service';
 
@@ -99,6 +100,12 @@ export async function POST(request) {
     // Update recipient count
     newsletter.recipientCount = subscribers.length;
     await newsletter.save();
+
+    // Initialize delivery tracking for all subscribers
+    await NewsletterDelivery.initializeDeliveries(
+      newsletter._id,
+      subscribers.map(s => s.email)
+    );
 
     // Send newsletter using the email service
     try {

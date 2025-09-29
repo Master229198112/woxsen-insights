@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const newsletterDeliverySchema = new mongoose.Schema({
+const NewsletterDeliverySchema = new mongoose.Schema({
   newsletterId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Newsletter',
@@ -10,7 +10,6 @@ const newsletterDeliverySchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    lowercase: true,
     index: true
   },
   status: {
@@ -22,8 +21,14 @@ const newsletterDeliverySchema = new mongoose.Schema({
   sentAt: {
     type: Date
   },
-  failureReason: {
-    type: String
+  openedAt: {
+    type: Date
+  },
+  clickedAt: {
+    type: Date
+  },
+  bouncedAt: {
+    type: Date
   },
   attempts: {
     type: Number,
@@ -35,72 +40,23 @@ const newsletterDeliverySchema = new mongoose.Schema({
   error: {
     type: String
   },
-  messageId: {
-    type: String // Email service message ID
+  failureReason: {
+    type: String
   },
-  trackingId: {
-    type: String, // Unique ID for tracking opens/clicks
-    unique: true,
-    sparse: true
+  messageId: {
+    type: String
   }
 }, {
   timestamps: true
 });
 
-// Compound indexes
-newsletterDeliverySchema.index({ newsletterId: 1, email: 1 }, { unique: true });
-newsletterDeliverySchema.index({ newsletterId: 1, status: 1 });
+// Compound index for querying deliveries by newsletter and status
+NewsletterDeliverySchema.index({ newsletterId: 1, status: 1 });
+NewsletterDeliverySchema.index({ newsletterId: 1, email: 1 }, { unique: true });
 
-// Static methods
-newsletterDeliverySchema.statics.createDeliveryRecord = function(newsletterId, email, trackingId) {
-  return this.findOneAndUpdate(
-    { newsletterId, email },
-    { 
-      newsletterId, 
-      email, 
-      trackingId,
-      status: 'pending',
-      $inc: { attempts: 1 },
-      lastAttemptAt: new Date()
-    },
-    { upsert: true, new: true }
-  );
-};
-
-newsletterDeliverySchema.statics.markAsSent = function(newsletterId, email, messageId) {
-  return this.findOneAndUpdate(
-    { newsletterId, email },
-    { 
-      status: 'sent',
-      sentAt: new Date(),
-      messageId
-    },
-    { new: true }
-  );
-};
-
-newsletterDeliverySchema.statics.markAsFailed = function(newsletterId, email, reason) {
-  return this.findOneAndUpdate(
-    { newsletterId, email },
-    { 
-      status: 'failed',
-      failureReason: reason,
-      error: reason,
-      lastAttemptAt: new Date()
-    },
-    { new: true }
-  );
-};
-
-newsletterDeliverySchema.statics.getFailedEmails = function(newsletterId) {
-  return this.find({ 
-    newsletterId, 
-    status: { $in: ['failed', 'pending'] } 
-  }).select('email status failureReason attempts');
-};
-
-newsletterDeliverySchema.statics.getDeliveryStats = function(newsletterId) {
-  return this.aggregate([
+// Static method to get delivery stats for a newsletter
+NewsletterDeliverySchema.statics.getDeliveryStats = async function(newsletterId) {
+  const stats = await this.aggregate([
     { $match: { newsletterId: new mongoose.Types.ObjectId(newsletterId) } },
     {
       $group: {
@@ -109,6 +65,48 @@ newsletterDeliverySchema.statics.getDeliveryStats = function(newsletterId) {
       }
     }
   ]);
+
+  const result = {
+    pending: 0,
+    sent: 0,
+    failed: 0,
+    bounced: 0,
+    total: 0
+  };
+
+  stats.forEach(stat => {
+    result[stat._id] = stat.count;
+    result.total += stat.count;
+  });
+
+  return result;
 };
 
-export default mongoose.models.NewsletterDelivery || mongoose.model('NewsletterDelivery', newsletterDeliverySchema);
+// Static method to get unsent subscribers for a newsletter
+NewsletterDeliverySchema.statics.getUnsentEmails = async function(newsletterId) {
+  const deliveries = await this.find({
+    newsletterId,
+    status: { $in: ['pending', 'failed'] }
+  }).select('email');
+
+  return deliveries.map(d => d.email);
+};
+
+// Static method to initialize delivery tracking for subscribers
+NewsletterDeliverySchema.statics.initializeDeliveries = async function(newsletterId, subscriberEmails) {
+  const deliveries = subscriberEmails.map(email => ({
+    newsletterId,
+    email,
+    status: 'pending',
+    attempts: 0
+  }));
+
+  await this.insertMany(deliveries, { ordered: false }).catch(err => {
+    // Ignore duplicate key errors
+    if (err.code !== 11000) throw err;
+  });
+};
+
+const NewsletterDelivery = mongoose.models.NewsletterDelivery || mongoose.model('NewsletterDelivery', NewsletterDeliverySchema);
+
+export default NewsletterDelivery;
