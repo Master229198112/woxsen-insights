@@ -22,6 +22,7 @@ const userSchema = new mongoose.Schema({
     trim: true,
     minlength: [3, 'Username must be at least 3 characters'],
     maxlength: [30, 'Username cannot exceed 30 characters'],
+    index: true, // Single index declaration
     validate: {
       validator: function(v) {
         // Allow null/undefined for existing users
@@ -576,9 +577,9 @@ userSchema.statics.findBySlug = async function(slug) {
   return null;
 };
 
-// Create indexes (removed duplicate email index)
-// userSchema.index({ email: 1 }); // REMOVED - email already has unique: true
-userSchema.index({ username: 1 }); // Index for username lookups
+// Create indexes (removed duplicate email and username indexes)
+// Note: email already has unique: true which creates an index automatically
+// Note: username already has index: true in the schema definition above
 userSchema.index({ role: 1 });
 userSchema.index({ isApproved: 1 });
 userSchema.index({ department: 1 });

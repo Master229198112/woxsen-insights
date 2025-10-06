@@ -73,6 +73,14 @@ export default function Register() {
     setLoading(true);
     setError('');
 
+    // Email domain validation
+    const emailDomain = formData.email.split('@')[1];
+    if (emailDomain !== 'woxsen.edu.in') {
+      setError('Only Woxsen University email addresses (@woxsen.edu.in) are allowed');
+      setLoading(false);
+      return;
+    }
+
     // Client-side validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
@@ -282,9 +290,14 @@ export default function Register() {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="your.email@woxsen.edu.in"
+                    placeholder="your.name@woxsen.edu.in"
                     className="w-full"
+                    pattern=".*@woxsen\.edu\.in$"
+                    title="Please use your Woxsen University email (@woxsen.edu.in)"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Only @woxsen.edu.in email addresses are allowed
+                  </p>
                 </div>
 
                 <div>

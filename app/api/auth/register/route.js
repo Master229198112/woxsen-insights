@@ -27,6 +27,15 @@ export async function POST(request) {
       );
     }
 
+    // Email domain validation - only allow @woxsen.edu.in
+    const emailDomain = email.split('@')[1];
+    if (!emailDomain || emailDomain.toLowerCase() !== 'woxsen.edu.in') {
+      return NextResponse.json(
+        { error: 'Only Woxsen University email addresses (@woxsen.edu.in) are allowed' },
+        { status: 400 }
+      );
+    }
+
     if (password.length < 6) {
       return NextResponse.json(
         { error: 'Password must be at least 6 characters long' },
