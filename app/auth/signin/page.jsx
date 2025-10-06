@@ -43,7 +43,16 @@ export default function SignInPage() {
       });
 
       if (result?.error) {
-        setError('Invalid email or password. Please try again.');
+        // Show more specific error with email
+        if (result.error.includes('No user found')) {
+          setError(`No account found with email: ${formData.email}. Please check the email address or register a new account.`);
+        } else if (result.error.includes('not approved')) {
+          setError(`The account ${formData.email} is pending approval. Please contact an administrator.`);
+        } else if (result.error.includes('Invalid password')) {
+          setError(`Invalid password for ${formData.email}. Please try again or reset your password.`);
+        } else {
+          setError(`Authentication failed for ${formData.email}. Please check your credentials and try again.`);
+        }
       } else {
         router.push('/dashboard');
       }
@@ -77,9 +86,12 @@ export default function SignInPage() {
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {error && (
-                    <div className="flex items-center p-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg">
-                      <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-                      {error}
+                    <div className="flex items-start p-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg">
+                      <AlertCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium mb-1">Authentication Failed</p>
+                        <p>{error}</p>
+                      </div>
                     </div>
                   )}
 
@@ -100,6 +112,11 @@ export default function SignInPage() {
                         placeholder="Enter your email address"
                       />
                     </div>
+                    {formData.email && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Attempting to sign in as: <span className="font-medium text-gray-700">{formData.email}</span>
+                      </p>
+                    )}
                   </div>
 
                   <div>
