@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import bcrypt from 'bcryptjs';
 
 export async function POST(request) {
   try {
@@ -37,11 +36,8 @@ export async function POST(request) {
       );
     }
 
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Update user password and clear reset token
-    user.password = hashedPassword;
+    // Set new password (pre-save hook will hash it)
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpiry = undefined;
     await user.save();
