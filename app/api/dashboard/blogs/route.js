@@ -5,10 +5,11 @@ import Blog from '@/models/Blog';
 import mongoose from 'mongoose';
 import { authOptions } from '@/lib/auth-config';
 
+// Cache for 2 minutes since dashboard data changes frequently
+export const revalidate = 120;
+
 export async function GET(request) {
   try {
-    console.log('🔍 User blogs API called');
-    
     const session = await getServerSession(authOptions);
     
     if (!session) {
@@ -18,13 +19,11 @@ export async function GET(request) {
       );
     }
 
-    console.log('👤 User:', session.user.email);
     await connectDB();
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     
-    // FIX: Convert session.user.id to ObjectId
     const userId = new mongoose.Types.ObjectId(session.user.id);
     
     let filter = { author: userId };
@@ -32,43 +31,30 @@ export async function GET(request) {
       filter.status = status;
     }
 
-    console.log('🔍 Query filter:', filter);
-
-    const blogs = await Blog.find(filter)
-      .populate('author', 'name email department')
-      .sort({ createdAt: -1 });
-
-    console.log('📝 Found user blogs:', blogs.length);
-
-    // Get counts for user's blogs
-    const pendingCount = await Blog.countDocuments({ 
-      author: userId, 
-      status: 'pending' 
-    });
-    const publishedCount = await Blog.countDocuments({ 
-      author: userId, 
-      status: 'published' 
-    });
-    const draftCount = await Blog.countDocuments({ 
-      author: userId, 
-      status: 'draft' 
-    });
-    const rejectedCount = await Blog.countDocuments({ 
-      author: userId, 
-      status: 'rejected' 
-    });
-    const totalCount = await Blog.countDocuments({ 
-      author: userId 
-    });
-
-    // FIX: Calculate total views with proper ObjectId matching
-    const viewsResult = await Blog.aggregate([
-      { $match: { author: userId } },
-      { $group: { _id: null, totalViews: { $sum: '$views' } } }
+    // Parallel queries for better performance
+    const [blogs, counts, viewsResult] = await Promise.all([
+      Blog.find(filter)
+        .select('title excerpt slug category status featuredImage publishedAt views likes createdAt rejectionReason')
+        .populate('author', 'name email department')
+        .sort({ createdAt: -1 })
+        .lean(),
+      
+      Promise.all([
+        Blog.countDocuments({ author: userId, status: 'pending' }),
+        Blog.countDocuments({ author: userId, status: 'published' }),
+        Blog.countDocuments({ author: userId, status: 'draft' }),
+        Blog.countDocuments({ author: userId, status: 'rejected' }),
+        Blog.countDocuments({ author: userId })
+      ]),
+      
+      Blog.aggregate([
+        { $match: { author: userId } },
+        { $group: { _id: null, totalViews: { $sum: '$views' } } }
+      ])
     ]);
-    const totalViews = viewsResult.length > 0 ? viewsResult[0].totalViews : 0;
 
-    console.log('📊 User stats - Pending:', pendingCount, 'Published:', publishedCount, 'Drafts:', draftCount, 'Rejected:', rejectedCount, 'Total:', totalCount, 'Views:', totalViews);
+    const [pendingCount, publishedCount, draftCount, rejectedCount, totalCount] = counts;
+    const totalViews = viewsResult.length > 0 ? viewsResult[0].totalViews : 0;
 
     return NextResponse.json({ 
       blogs,
@@ -78,12 +64,16 @@ export async function GET(request) {
         draft: draftCount,
         rejected: rejectedCount,
         total: totalCount,
-        totalViews: totalViews
+        totalViews
+      }
+    }, {
+      headers: {
+        'Cache-Control': 'private, max-age=120, stale-while-revalidate=240'
       }
     });
 
   } catch (error) {
-    console.error('❌ Get user blogs error:', error);
+    console.error('Get user blogs error:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

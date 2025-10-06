@@ -1,19 +1,23 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 
-// PUBLIC endpoint to check maintenance status (no authentication required)
+// Cache for 5 minutes
+export const revalidate = 300;
+
 export async function GET() {
   try {
     await connectDB();
     
-    // Import Settings dynamically to handle potential edge runtime issues
     const { default: Settings } = await import('@/models/Settings');
     
     if (!Settings) {
-      // If Settings model couldn't be created, assume no maintenance
       return NextResponse.json({
         maintenanceMode: false,
         maintenanceMessage: 'We are currently performing scheduled maintenance. Please check back soon.'
+      }, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600'
+        }
       });
     }
     
@@ -22,14 +26,21 @@ export async function GET() {
     return NextResponse.json({
       maintenanceMode: settings.maintenanceMode || false,
       maintenanceMessage: settings.maintenanceMessage || 'We are currently performing scheduled maintenance. Please check back soon.'
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600'
+      }
     });
   } catch (error) {
     console.error('Maintenance status error:', error);
     
-    // If there's an error, assume no maintenance mode
     return NextResponse.json({
       maintenanceMode: false,
       maintenanceMessage: 'We are currently performing scheduled maintenance. Please check back soon.'
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600'
+      }
     });
   }
 }

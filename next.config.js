@@ -1,15 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  compress: true, // Enable gzip compression
+  
   images: {
     remotePatterns: [
-      // Cloudinary (current primary image host)
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
         port: '',
         pathname: '/**',
       },
-      // Google services
       {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
@@ -34,7 +34,6 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
-      // Microsoft OneDrive
       {
         protocol: 'https',
         hostname: 'onedrive.live.com',
@@ -53,7 +52,6 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
-      // Dropbox
       {
         protocol: 'https',
         hostname: 'dropbox.com',
@@ -66,7 +64,6 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
-      // Common image hosting services
       {
         protocol: 'https',
         hostname: 'imgur.com',
@@ -103,7 +100,6 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
-      // GitHub (for documentation images)
       {
         protocol: 'https',
         hostname: 'raw.githubusercontent.com',
@@ -116,7 +112,6 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
-      // University domains (add your specific domains)
       {
         protocol: 'https',
         hostname: '*.woxsen.edu.in',
@@ -129,21 +124,18 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
-      // AWS S3 (common for academic institutions)
       {
         protocol: 'https',
         hostname: '*.amazonaws.com',
         port: '',
         pathname: '/**',
       },
-      // Azure Blob Storage
       {
         protocol: 'https',
         hostname: '*.blob.core.windows.net',
         port: '',
         pathname: '/**',
       },
-      // Generic academic/educational domains
       {
         protocol: 'https',
         hostname: '*.edu',
@@ -157,14 +149,17 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
-    // Image optimization settings
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    formats: ['image/avif', 'image/webp'], // AVIF first for better compression
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days cache
+    deviceSizes: [640, 750, 828, 1080, 1200], // Reduced sizes
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    formats: ['image/webp', 'image/avif'],
-    minimumCacheTTL: 60,
-    dangerouslyAllowSVG: false, // Keep false for security
+    dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
+  
+  // Optimize production builds
+  swcMinify: true,
+  
   env: {
     MONGODB_URI: process.env.MONGODB_URI,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
@@ -172,7 +167,13 @@ const nextConfig = {
     CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
     CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
     CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
-  }
+  },
+  
+  // Experimental optimizations
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+  },
 }
 
 module.exports = nextConfig

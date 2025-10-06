@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import connectDB from '@/lib/mongodb';
 import Blog from '@/models/Blog';
-import Settings from '@/models/Settings'; // ADD THIS IMPORT
+import Settings from '@/models/Settings';
 import { authOptions } from '@/lib/auth-config';
 
-// POST /api/blogs - Create new blog post
+// Cache for 1 hour
+export const revalidate = 3600;
+
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,12 +21,10 @@ export async function POST(request) {
 
     await connectDB();
     
-    // CHECK SETTINGS FOR AUTO-PUBLISH
     const settings = await Settings.getSettings();
     
     const { title, content, excerpt, category, tags, featuredImage } = await request.json();
 
-    // Validation
     if (!title || !content || !excerpt || !category || !featuredImage) {
       return NextResponse.json(
         { error: 'All fields are required' },
@@ -32,7 +32,6 @@ export async function POST(request) {
       );
     }
 
-    // UPDATED BLOG CREATION WITH EXPLICIT SLUG GENERATION
     const blogData = {
       title,
       content,
@@ -45,7 +44,6 @@ export async function POST(request) {
       publishedAt: settings.autoPublish ? new Date() : null,
     };
     
-    // Generate unique slug before creating the blog
     let baseSlug = title
       .toLowerCase()
       .trim()
@@ -58,7 +56,6 @@ export async function POST(request) {
     let slug = baseSlug;
     let counter = 1;
     
-    // Ensure unique slug
     while (await Blog.findOne({ slug })) {
       slug = `${baseSlug}-${counter}`;
       counter++;
@@ -74,8 +71,6 @@ export async function POST(request) {
       ? 'Blog published successfully!' 
       : 'Blog submitted for review!';
 
-    console.log(`📝 Blog "${title}" ${settings.autoPublish ? 'published' : 'submitted'} by ${session.user.name} with slug: ${slug}`);
-
     return NextResponse.json({ 
       blog: populatedBlog,
       message,
@@ -85,7 +80,6 @@ export async function POST(request) {
   } catch (error) {
     console.error('Create blog error:', error);
     
-    // Handle duplicate key errors specifically
     if (error.code === 11000 && error.keyPattern?.slug) {
       return NextResponse.json(
         { error: 'A blog with this title already exists. Please use a different title.' },
@@ -108,7 +102,6 @@ export async function POST(request) {
   }
 }
 
-// GET /api/blogs - Get published blogs (existing functionality)
 export async function GET(request) {
   try {
     await connectDB();
@@ -123,11 +116,14 @@ export async function GET(request) {
       filter.category = category;
     }
     
+    // Optimized query - only select needed fields
     const blogs = await Blog.find(filter)
+      .select('title excerpt slug author category tags featuredImage publishedAt views likes')
       .populate('author', 'name department')
       .sort({ publishedAt: -1 })
       .limit(limit)
-      .skip((page - 1) * limit);
+      .skip((page - 1) * limit)
+      .lean(); // Use lean for better performance
     
     const total = await Blog.countDocuments(filter);
     
@@ -139,6 +135,10 @@ export async function GET(request) {
         hasNext: page < Math.ceil(total / limit),
         hasPrev: page > 1,
         totalItems: total
+      }
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200'
       }
     });
     

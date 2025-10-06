@@ -3,89 +3,80 @@ import connectDB from '@/lib/mongodb';
 import Blog from '@/models/Blog';
 import User from '@/models/User';
 
+// Cache for 10 minutes
+export const revalidate = 600;
+
 export async function GET() {
   try {
-    console.log('Homepage API: Starting...');
     await connectDB();
-    console.log('Homepage API: Database connected');
 
-    // Get featured posts
-    const featuredPosts = await Blog.find({ 
-      status: 'published', 
-      isFeatured: true
-    })
-    .populate('author', 'name department username')
-    .sort({ publishedAt: -1 })
-    .limit(6);
+    // Optimized parallel queries
+    const [featuredPosts, recentPosts, totalPublished, totalAuthors, viewsResult] = await Promise.all([
+      Blog.find({ status: 'published', isFeatured: true })
+        .select('title excerpt slug author category featuredImage publishedAt views likes')
+        .populate('author', 'name department username')
+        .sort({ publishedAt: -1 })
+        .limit(6)
+        .lean(),
+      
+      Blog.find({ status: 'published' })
+        .select('title excerpt slug author category featuredImage publishedAt views likes')
+        .populate('author', 'name department username')
+        .sort({ publishedAt: -1 })
+        .limit(14) // Get extra to filter out featured
+        .lean(),
+      
+      Blog.countDocuments({ status: 'published' }),
+      
+      User.countDocuments({ isApproved: true, role: { $in: ['staff', 'admin'] } }),
+      
+      Blog.aggregate([
+        { $match: { status: 'published' } },
+        { $group: { _id: null, totalViews: { $sum: '$views' } } }
+      ])
+    ]);
 
-    // Get recent posts
-    const recentPosts = await Blog.find({ 
-      status: 'published',
-      _id: { $nin: featuredPosts.map(p => p._id) } // Exclude featured posts
-    })
-    .populate('author', 'name department username')
-    .sort({ publishedAt: -1 })
-    .limit(8);
+    // Filter out featured posts from recent
+    const featuredIds = new Set(featuredPosts.map(p => p._id.toString()));
+    const filteredRecent = recentPosts.filter(p => !featuredIds.has(p._id.toString())).slice(0, 8);
 
-    // Get posts by category for category showcase - INCLUDE ALL CATEGORIES
-    const categories = [
-      'research', 
-      'achievements', 
-      'events', 
-      'patents',
-      'case-studies',
-      'blogs',
-      'industry-collaborations'
-    ];
+    const categories = ['research', 'achievements', 'events', 'patents', 'case-studies', 'blogs', 'industry-collaborations'];
+    
+    // Optimized category queries in parallel
+    const categoryResults = await Promise.all(
+      categories.map(category => Promise.all([
+        Blog.find({ status: 'published', category })
+          .select('title excerpt slug author category featuredImage publishedAt views')
+          .populate('author', 'name department username')
+          .sort({ publishedAt: -1 })
+          .limit(4)
+          .lean(),
+        Blog.countDocuments({ status: 'published', category })
+      ]))
+    );
+
     const categoryPosts = {};
     const categoryCounts = {};
-
-    for (const category of categories) {
-      // Get latest posts for this category
-      categoryPosts[category] = await Blog.find({ 
-        status: 'published', 
-        category 
-      })
-      .populate('author', 'name department username')
-      .sort({ publishedAt: -1 })
-      .limit(4);
-
-      // Get count for this category
-      categoryCounts[category] = await Blog.countDocuments({ 
-        status: 'published', 
-        category 
-      });
-    }
-
-    // Get overall stats
-    const totalPublished = await Blog.countDocuments({ status: 'published' });
-    const totalAuthors = await User.countDocuments({ 
-      isApproved: true, 
-      role: { $in: ['staff', 'admin'] }
+    categories.forEach((category, index) => {
+      categoryPosts[category] = categoryResults[index][0];
+      categoryCounts[category] = categoryResults[index][1];
     });
-    
-    // Calculate total views
-    const viewsResult = await Blog.aggregate([
-      { $match: { status: 'published' } },
-      { $group: { _id: null, totalViews: { $sum: '$views' } } }
-    ]);
+
     const totalViews = viewsResult.length > 0 ? viewsResult[0].totalViews : 0;
-
-    console.log('Homepage API: Sending response with', {
-      featuredPostsCount: featuredPosts.length,
-      recentPostsCount: recentPosts.length,
-      totalPublished
-    });
 
     return NextResponse.json({
       featuredPosts,
-      recentPosts,
+      recentPosts: filteredRecent,
       categoryPosts,
       stats: {
         totalPublished,
         totalAuthors,
         totalViews,
         categoryCounts
+      }
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200'
       }
     });
 

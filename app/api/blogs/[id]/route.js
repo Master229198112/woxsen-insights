@@ -2,11 +2,13 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Blog from '@/models/Blog';
 import Comment from '@/models/Comment';
-// Import specialized models so they're registered with mongoose
 import Research from '@/models/Research';
 import Patent from '@/models/Patent';
 import Achievement from '@/models/Achievement';
 import Event from '@/models/Event';
+
+// Cache for 10 minutes
+export const revalidate = 600;
 
 export async function GET(request, { params }) {
   try {
@@ -16,73 +18,69 @@ export async function GET(request, { params }) {
 
     let blog;
     
-    // Try to find by slug first, then by ID and populate specialized data
+    // Find by slug or ID with optimized queries
     if (id.match(/^[0-9a-fA-F]{24}$/)) {
-      // It's a MongoDB ObjectId format
       blog = await Blog.findById(id)
-        .populate('author', 'name email department username')
+        .select('title content excerpt author category tags featuredImage publishedAt views likes slug status researchData patentData achievementData eventData')
+        .populate('author', 'name email department username profileImage')
         .populate('researchData')
         .populate('patentData')
         .populate('achievementData')
-        .populate('eventData');
+        .populate('eventData')
+        .lean();
     } else {
-      // It's a slug
       blog = await Blog.findOne({ slug: id })
-        .populate('author', 'name email department username')
+        .select('title content excerpt author category tags featuredImage publishedAt views likes slug status researchData patentData achievementData eventData')
+        .populate('author', 'name email department username profileImage')
         .populate('researchData')
         .populate('patentData')
         .populate('achievementData')
-        .populate('eventData');
+        .populate('eventData')
+        .lean();
     }
     
-    if (!blog) {
+    if (!blog || blog.status !== 'published') {
       return NextResponse.json(
         { error: 'Blog not found' },
         { status: 404 }
       );
     }
 
-    // Only return published blogs (except for authors and admins)
-    if (blog.status !== 'published') {
-      return NextResponse.json(
-        { error: 'Blog not found' },
-        { status: 404 }
-      );
-    }
+    // Increment views asynchronously (don't wait)
+    Blog.findByIdAndUpdate(blog._id, { $inc: { views: 1 } }).exec();
 
-    // Increment views atomically
-    await Blog.findByIdAndUpdate(blog._id, { $inc: { views: 1 } });
-    blog.views += 1; // Update the current object for response
-
-    console.log('Blog found with category:', blog.category);
-    console.log('Blog has researchData:', !!blog.researchData);
-    console.log('Blog has patentData:', !!blog.patentData);
-    console.log('Blog has achievementData:', !!blog.achievementData);
-    console.log('Blog has eventData:', !!blog.eventData);
-
-    // Get approved comments for this blog
-    const comments = await Comment.find({
-      blog: blog._id,
-      isApproved: true
-    })
-    .populate('author', 'name email department username')
-    .sort({ createdAt: -1 })
-    .limit(50);
-
-    // Get related blogs from same category (excluding current blog)
-    const relatedBlogs = await Blog.find({
-      category: blog.category,
-      status: 'published',
-      _id: { $ne: blog._id }
-    })
-    .populate('author', 'name department username')
-    .sort({ publishedAt: -1 })
-    .limit(4);
+    // Parallel queries for better performance
+    const [comments, relatedBlogs] = await Promise.all([
+      Comment.find({
+        blog: blog._id,
+        isApproved: true
+      })
+      .select('content author createdAt')
+      .populate('author', 'name email department username')
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean(),
+      
+      Blog.find({
+        category: blog.category,
+        status: 'published',
+        _id: { $ne: blog._id }
+      })
+      .select('title excerpt slug author category featuredImage publishedAt views')
+      .populate('author', 'name department username')
+      .sort({ publishedAt: -1 })
+      .limit(4)
+      .lean()
+    ]);
 
     return NextResponse.json({
       blog,
       comments,
       relatedBlogs
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200'
+      }
     });
 
   } catch (error) {

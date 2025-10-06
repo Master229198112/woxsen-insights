@@ -3,7 +3,9 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-config';
 import { NotificationService } from '@/lib/notifications';
 
-// GET /api/notifications - Get user notifications
+// Cache for 30 seconds to reduce polling load
+export const revalidate = 30;
+
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -25,7 +27,11 @@ export async function GET(request) {
       { page, limit, unreadOnly }
     );
 
-    return NextResponse.json(result);
+    return NextResponse.json(result, {
+      headers: {
+        'Cache-Control': 'private, max-age=30, stale-while-revalidate=60'
+      }
+    });
 
   } catch (error) {
     console.error('Get notifications error:', error);
@@ -36,7 +42,6 @@ export async function GET(request) {
   }
 }
 
-// PATCH /api/notifications - Mark notifications as read
 export async function PATCH(request) {
   try {
     const session = await getServerSession(authOptions);
